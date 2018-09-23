@@ -57,10 +57,11 @@ int opensocket(int portno)
     struct sockaddr_in myaddress;
     char *msgtodisplay, *tmpmsg; //Message to be displayed
     int recbufsize, sockoptsize;
+    char str[INET_ADDRSTRLEN];
 
     myaddress.sin_family = AF_INET;
     myaddress.sin_port = htons(portno); //Convert to network byte order
-    //myaddress.sin_addr.s_addr = inet_addr("127.0.0.1");
+    // myaddress.sin_addr.s_addr = inet_addr("127.0.0.1");
     myaddress.sin_addr.s_addr = INADDR_ANY; // Use any of the available addresses
     memset(&(myaddress.sin_zero), 0, 8); // Make last 8 bytes 0
 
@@ -90,7 +91,9 @@ int opensocket(int portno)
         perror("");
         exit(1); //exit with error
     }
-    printf("Listening on port %d..............\n", portno);
+
+    inet_ntop(AF_INET, &(myaddress.sin_addr.s_addr), str, INET_ADDRSTRLEN);
+    printf("Listening on ip %c%c%c%c%c%c%c%c%c%c : port %d.................\n",str[0],str[1],str[2],str[3],str[4],str[5],str[6],str[7],str[8],str[9], portno);
     return sockfd;
 }
 
