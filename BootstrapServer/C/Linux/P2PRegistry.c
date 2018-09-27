@@ -61,7 +61,7 @@ int opensocket(int portno)
 
     myaddress.sin_family = AF_INET;
     myaddress.sin_port = htons(portno); //Convert to network byte order
-    // myaddress.sin_addr.s_addr = inet_addr("127.0.0.1");
+    //myaddress.sin_addr.s_addr = inet_addr("127.0.0.1");
     myaddress.sin_addr.s_addr = INADDR_ANY; // Use any of the available addresses
     memset(&(myaddress.sin_zero), 0, 8); // Make last 8 bytes 0
 
