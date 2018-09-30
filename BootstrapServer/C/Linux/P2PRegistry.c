@@ -15,6 +15,7 @@
 #include <string.h>
 #include "P2PRegistry.h"
 #include <netdb.h>
+#include <unistd.h>
 
 
 struct table_entry peer_table[TABLE_SIZE];
@@ -93,7 +94,7 @@ int opensocket(int portno)
     }
 
     inet_ntop(AF_INET, &(myaddress.sin_addr.s_addr), str, INET_ADDRSTRLEN);
-    printf("Listening on ip %c%c%c%c%c%c%c%c%c%c : port %d.................\n",str[0],str[1],str[2],str[3],str[4],str[5],str[6],str[7],str[8],str[9], portno);
+    printf("Listening on ip %s : port %d.................\n",str, portno);
     return sockfd;
 }
 
