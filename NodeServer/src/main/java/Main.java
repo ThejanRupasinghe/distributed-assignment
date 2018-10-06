@@ -16,16 +16,31 @@ public class Main {
         // to the hosted BS server
 //		connector.startConnection("142.93.244.96", 55555);
         // to the local BS server in C
-        connector.startConnection("0.0.0.0", 5000);
+        connector.startConnection("0.0.0.0", 55555);
 
-        Node node = new Node("129.82.123.45", 5001, "1234abcd");
-        String connectMessage = NodesController.getUnregNodeMessage(node);
-        logger.info("Message Prepared: " + connectMessage);
+        registerNodeExample(connector);
 
-        String response = connector.sendMessage(connectMessage);
-        logger.info("Response Received: " + response);
-        // TODO: 9/30/18 parse the response
 
         connector.stopConnection();
+    }
+
+    private static void registerNodeExample(TCPConnector connector) throws Exception {
+        Node node = new Node("129.82.123.45", 5001, "1234abcd");
+        String regMessage = NodesController.getRegNodeMessage(node);
+        logger.info("RegNodeMessage: " + regMessage);
+
+        String response = connector.sendMessage(regMessage);
+        logger.info("Response Received: " + response);
+        // TODO: 9/30/18 parse the response
+    }
+
+    private static void unregisterNodeExample(TCPConnector connector) throws Exception {
+        Node node = new Node("129.82.123.45", 5001, "1234abcd");
+        String unregMessage = NodesController.getUnregNodeMessage(node);
+        logger.info("UnregNodeMessage: " + unregMessage);
+
+        String response = connector.sendMessage(unregMessage);
+        logger.info("Response Received: " + response);
+        // TODO: 9/30/18 parse the response
     }
 }
