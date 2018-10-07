@@ -1,4 +1,4 @@
-package com.models;
+package node.models;
 
 public class Node {
     private String ipAddr;

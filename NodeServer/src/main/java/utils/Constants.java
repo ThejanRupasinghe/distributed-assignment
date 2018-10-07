@@ -1,4 +1,4 @@
-package com;
+package utils;
 
 public class Constants {
     public static final String REG = "REG";

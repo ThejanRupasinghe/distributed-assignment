@@ -1,5 +1,5 @@
-import com.controllers.NodesController;
-import com.models.Node;
+import node.controllers.NodesController;
+import node.models.Node;
 import com.tcp.TCPConnector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,8 +1,8 @@
-package com.controllers;
+package node.controllers;
 
-import com.Constants;
-import com.Utils;
-import com.models.Node;
+import utils.Constants;
+import utils.Utils;
+import node.models.Node;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
