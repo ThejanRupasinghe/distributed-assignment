@@ -3,24 +3,30 @@ import node.models.Node;
 import com.tcp.TCPConnector;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.ServerSocket;
 
 public class Main {
 
     private static final Logger logger = LogManager.getLogger(Main.class);
 
     // TODO: 9/30/18 handle exceptions
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception{
         logger.info("Node Started.");
 
+	    DatagramSocket serverSocket = new DatagramSocket(9090);
+	    ServerSocket ss = new ServerSocket(9090);
+
         TCPConnector connector = new TCPConnector();
-        // to the hosted BS server
-//		connector.startConnection("142.93.244.96", 55555);
-        // to the local BS server in C
-        connector.startConnection("0.0.0.0", 55555);
-
+//        // to the hosted BS server
+//		connector.startConnection("142.93.244.96", 9090);
+//        // to the local BS server in C
+        connector.startConnection("0.0.0.0", 9090);
+//
         registerNodeExample(connector);
-
-
+//
+//
         connector.stopConnection();
     }
 
