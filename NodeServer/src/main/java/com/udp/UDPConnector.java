@@ -10,7 +10,7 @@ public class UDPConnector extends AbstractConnector {
 
 	// TODO: 9/30/18 Implement
 	@Override
-	public String sendMessage(String message) throws Exception {
+	public String sendMessage(String message) {
 		return null;
 	}
 }
