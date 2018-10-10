@@ -25,7 +25,6 @@ public class NetworkController {
 		return ip;
 	}
 
-
 	public static boolean available(int port) {
 		ServerSocket ss = null;
 		DatagramSocket ds = null;
@@ -35,8 +34,10 @@ public class NetworkController {
 			ds = new DatagramSocket(port);
 			ds.setReuseAddress(true);
 			return true;
-		} catch (IOException e) {
-		} finally {
+		}
+		catch (IOException e) {
+		}
+		finally {
 			if (ds != null) {
 				ds.close();
 			}
@@ -44,7 +45,8 @@ public class NetworkController {
 			if (ss != null) {
 				try {
 					ss.close();
-				} catch (IOException e) {
+				}
+				catch (IOException e) {
 					e.printStackTrace();
 				}
 			}
