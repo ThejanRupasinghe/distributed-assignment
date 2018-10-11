@@ -20,23 +20,15 @@ public abstract class AbstractConnector {
 
 	private static final Logger logger = LogManager.getLogger(AbstractConnector.class);
 
-	public void startConnection(String ip, int port) {
+	public void startConnection(String ip, int port) throws UnknownHostException, IOException {
 		//		clientSocket.bind(new InetSocketAddress("127.0.0.1",5050));
 		//		clientSocket.connect(new InetSocketAddress(ip,port));
-		try {
-			clientSocket = new Socket(ip, port);
-			out = new PrintWriter(clientSocket.getOutputStream(), true);
-			in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-			logger.debug("Socket Opened to " + ip + " : " + port);
-		}
-		catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-		catch (IOException e) {
-			e.printStackTrace();
-		}
+		clientSocket = new Socket(ip, port);
+		out = new PrintWriter(clientSocket.getOutputStream(), true);
+		in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
+		logger.debug("Socket Opened to " + ip + " : " + port);
 	}
 
 	public abstract String sendMessage(String message);
