@@ -23,7 +23,7 @@ public class Node {
     @Override
     public String toString() {
         return "Node{" +
-                "ipAddr=" + ipAddr +
+                " ipAddr=" + ipAddr +
                 ", port=" + port +
                 ", username='" + username + '\'' +
                 '}';

@@ -9,7 +9,7 @@ import java.net.UnknownHostException;
 
 public class NetworkController {
 
-	public String getMyIP() {
+	public static String getMyIP() {
 		String ip = null;
 		try (final DatagramSocket socket = new DatagramSocket()) {
 			socket.connect(InetAddress.getByName("8.8.8.8"), 10002);

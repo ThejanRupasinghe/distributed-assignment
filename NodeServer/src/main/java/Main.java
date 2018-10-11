@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+
+import node.controllers.NetworkController;
 import node.controllers.NodesController;
 import node.models.Node;
 import com.tcp.TCPConnector;
@@ -5,6 +8,7 @@ import utils.Configuration;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import utils.Utils;
 
 public class Main {
 
@@ -13,7 +17,7 @@ public class Main {
 	private static String configFile = "config.yml";
 
 	// TODO: 9/30/18 handle exceptions
-	public static void main(String[] args) throws Exception {
+	public static void main(String[] args) {
 		logger.info("Node Started.");
 
 		// takes config.yml file path
@@ -25,24 +29,57 @@ public class Main {
 
 		if (config != null) {
 			logger.info("Configuration loaded.");
-			logger.info("Bootstrap Server IP: " + config.getBsIP() + " Port: " + config.getBsPort());
+			logger.info("Bootstrap Server IP: " + config.getBsIP() + ", Port: " + config.getBsPort());
 
+			// get the IP of the connected node
+			String myIP = NetworkController.getMyIP();
 
+			// take random port numbers until available
+			int myPort = Utils.randPort();
+			while (!NetworkController.available(myPort)) {
+				myPort = Utils.randPort();
+			}
+
+			// take username
+			String myUserName = Utils.generateUsername();
+
+			Node myNode = new Node(myIP, myPort, myUserName);
+			logger.info("My Node : " + myNode.toString());
+
+			// register message
+			String regMessage = NodesController.getRegNodeMessage(myNode);
+
+			// start TCP connection to the BS
+			TCPConnector connector = new TCPConnector();
+			try {
+				connector.startConnection(config.getBsIP(), config.getBsPort());
+				// take response and parse
+				String regResponse = connector.sendMessage(regMessage);
+				ArrayList<Node> nodes = NodesController.parseRegNodeResponse(regResponse);
+
+				// only same entry error is handled.
+				while (nodes == null) {
+					// if same entry generate new username
+					myUserName = Utils.generateUsername();
+					myNode.setUsername(myUserName);
+
+					regResponse = connector.sendMessage(regMessage);
+					nodes = NodesController.parseRegNodeResponse(regResponse);
+				}
+
+				// stop TCP connection to BS
+				connector.stopConnection();
+
+			}
+			catch (Exception e) {
+				logger.error("Error in connecting to Bootstrap Server.");
+				e.printStackTrace();
+			}
 
 		} else {
 			logger.error("Failed to load Configurations.");
 		}
 
-		TCPConnector connector = new TCPConnector();
-		//        // to the hosted BS server
-		//		connector.startConnection("142.93.244.96", 9090);
-		//        // to the local BS server in C
-		connector.startConnection("0.0.0.0", 9090);
-		//
-		registerNodeExample(connector);
-		//
-		//
-		connector.stopConnection();
 	}
 
 	private static void registerNodeExample(TCPConnector connector) throws Exception {
