@@ -21,8 +21,9 @@ public class Main {
 		logger.info("Node Started.");
 
 		// takes config.yml file path
-		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-		String filePath = classLoader.getResource(configFile).getPath();
+		//		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+		//		String filePath = classLoader.getResource(configFile).getPath();
+		String filePath = "/" + configFile;
 
 		// loads configuration
 		Configuration config = Configuration.getConfiguration(filePath);
