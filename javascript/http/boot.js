@@ -1,6 +1,6 @@
-const cli = require('./lib/cli');
-const randome = require('./lib/random');
-const log = require('./lib/logger');
+const cli = require('../lib/cli');
+const randome = require('../lib/random');
+const log = require('../lib/logger');
 const express = require('express');
 const app = express();
 let listener, argv;

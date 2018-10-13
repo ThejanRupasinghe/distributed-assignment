@@ -1,8 +1,8 @@
 //<editor-fold desc="imports">
-const http = require('./lib/message');
-const random = require('./lib/random');
-const cli = require('./lib/cli');
-const log = require('./lib/logger');
+const http = require('../lib/message');
+const random = require('../lib/random');
+const cli = require('../lib/cli');
+const log = require('../lib/logger');
 const express = require('express');
 const minimist = require('minimist');
 const app = express();
@@ -14,19 +14,12 @@ let port = 4000;
 const rTable = {};
 let resource = [];
 
+const ERRORCODE = 'ECONNREFUSED';
+
 // identification route. Not do much things (PING)
 app.get('/', (req, res) => {
     res.jsonp({live: true, address: req.protocol + '://' + req.get('host') + req.originalUrl, name: name});
 });
-
-const msgErroHandler = (err) => {
-    if(err.code === 'ECONNREFUSED') {
-        // node not found
-
-    } else {
-        console.log(err);
-    }
-};
 
 // message handler
 app.get('/msg', (req, res) => {
@@ -45,16 +38,35 @@ app.get('/msg', (req, res) => {
         case 'send-msg': // not reliable
             if (parseInt(msg['status']) === 1 && msg['target'] === name) {
                 // This is destination
-                log.print(msg['msg']);
+                log.print('Incoming message => ', msg['msg']);
                 res.jsonp({success: true, msg: 'got it'});
             } else {
+
+                const funcSendRequest = (currentTarget, ttl, status) => {
+                    http.send(currentTarget, 'send-msg',
+                        {
+                            status: status,
+                            ttl: ttl,
+                            msg: msg['msg'],
+                            target: msg['target']
+                        },
+                        (err, res1, body) => {
+                            if (err && err.code === ERRORCODE) {
+                                log.error(currentTarget, 'is not live....');
+                                delete rTable[currentTarget];
+                                let randomPick = random.pickOne(rTable);
+                                log.warning('try a random pick node', randomPick);
+                                funcSendRequest(randomPick, ttl, status);
+                            } else {
+                                log.info(body);
+                            }
+                        });
+                };
+
                 if (rTable[msg['target']]) {
                     // know ( next hope)
                     log.ok('==== know', msg['target']);
-                    http.send(rTable[msg['target']], 'send-msg',
-                        {status: 1, ttl: 0, msg: msg['msg'], target: msg['target']}, (err, res, body) => {
-                            log.info(body);
-                        });
+                    funcSendRequest(rTable[msg['target']], parseInt(msg['ttl']) - 1 , 1);
                     res.jsonp({success: true, msg: 'found in next hope'});
                 } else {
                     // don't know (use random walk)
@@ -62,12 +74,7 @@ app.get('/msg', (req, res) => {
                         log.warning('==== dont know', msg['target']);
                         let randomPick = random.pickOne(rTable);
                         log.warning('random pick', randomPick);
-                        http.send(randomPick, 'send-msg',
-                            {
-                                status: 0, ttl: parseInt(msg['ttl']) - 1, target: msg['target'], msg: msg['msg']
-                            }, (err, res, body) => {
-                                log.print(body);
-                            });
+                        funcSendRequest(randomPick, parseInt(msg['ttl']) - 1, 0);
                         res.jsonp({success: true, msg: 'Not found in next hope, TTL is ' + (parseInt(msg['ttl']) - 1)});
                     } else {
                         log.error('TTL fail');
@@ -200,31 +207,46 @@ listener = require('./www').start(app, port);
 // CLI
 cli.init({
     'send-msg': (params) => { // (target, msg, ttl) not reliable
-        if (params['target'] && params['msg']) {
-            let target = params['target'], msg = params['msg'];
+        if (params['target']) {
+            let target = params['target'], msg = params['msg'] || '--empty_message--';
+
+            const funcSendRequest = (currentTarget, ttl, status) => {
+                http.send(currentTarget, 'send-msg',
+                    {
+                        status: status,
+                        ttl: ttl,
+                        msg: msg,
+                        target: target
+                    },
+                    (err, res1, body) => {
+                        if (err && err.code === ERRORCODE) {
+                            log.error(currentTarget, 'is not live....');
+                            delete rTable[currentTarget];
+                            let randomPick = random.pickOne(rTable);
+                            log.warning('try a random pick node', randomPick);
+                            funcSendRequest(randomPick, ttl, 0);
+                        } else {
+                            log.info(body);
+                        }
+                    });
+            };
+
             if (rTable[target]) {
                 // know
                 log.ok('==== know', target);
-                http.send(rTable[target], 'send-msg',
-                    {status: 1, ttl: 0, msg: msg, target: target}, (err, res, body) => {
-                        if (err) console.log(err);
-                        log.print(body);
-                    })
+                funcSendRequest(rTable[target], 5, 1);
             } else {
                 // dont know (use random walk)
                 log.warning('==== dont know', target);
                 let randomPick = random.pickOne(rTable);
                 log.warning('random pick', randomPick);
-                http.send(randomPick, 'send-msg',
-                    {status: 0, ttl: (params['ttl'] || 5), target: target, msg: msg}, (err, res, body) => {
-                        log.print(body);
-                    })
+                funcSendRequest(randomPick, (params['ttl'] || 5), 0);
             }
         }
     },
     'send-msg-rel': (params) => { // reliable (target, msg, ttl)
-        if (params['target'] && params['msg']) {
-            let target = params['target'], msg = params['msg'];
+        if (params['target']) {
+            let target = params['target'], msg = params['msg'] || '--empty_message--';
             if (rTable[target]) {
                 // know
                 log.ok('==== know', target);

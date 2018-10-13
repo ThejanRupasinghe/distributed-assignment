@@ -1,7 +1,7 @@
 let genRanSet = (count, max) => {
     let arr = [];
     if(count >= max) {
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < max; i++) {
             arr.push(i);
         }
     } else {

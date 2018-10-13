@@ -9,11 +9,14 @@ module.exports.init = (commands) => {
     commands.exit = () => {
         process.exit();
     };
+    commands.cls = () => {
+        console.log('\033[2J');
+    };
 
-    stdin.addListener("data", (d) => {
+    stdin.addListener('data', (d) => {
         d = d.toString().trim().split(/ +(?=(?:(?:[^"]*"){2})*[^"]*$)/g);
         if(commands[d[0]]) {
-            log.info(d);
+            // log.info(d);
             commands[d[0]](minimist(d))
         } else {
             log.print('no such command');

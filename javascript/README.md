@@ -27,4 +27,5 @@
 
 ### run.sh
 * Help to create servers.
+* Please make sure to edit the $DIR variable to your working dir.
 * If not execute use ``chmod +x run.sh && ./run.sh``

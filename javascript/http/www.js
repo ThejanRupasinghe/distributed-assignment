@@ -1,4 +1,4 @@
-const log = require('./lib/logger');
+const log = require('../lib/logger');
 module.exports.start  = (app, port) => {
     return app.listen(port, (err) => {
         if (err) {
