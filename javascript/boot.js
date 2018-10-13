@@ -2,7 +2,7 @@ const cli = require('./lib/cli');
 const randome = require('./lib/random');
 const log = require('./lib/logger');
 const udp = require('./lib/udp-message');
-let listener, argv;
+let argv;
 let port = 3000;
 
 // take command line argumnets (port)
