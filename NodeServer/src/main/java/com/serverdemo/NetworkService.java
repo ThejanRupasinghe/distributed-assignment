@@ -1,9 +1,8 @@
 package com.serverdemo;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.net.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,6 +11,7 @@ import java.util.concurrent.Executors;
 public class NetworkService implements Runnable {
     private final DatagramSocket serverSocket;
     private final ExecutorService pool;
+    public static final ExecutorService senderPool = Executors.newSingleThreadExecutor();
 
     public NetworkService(int port, int poolSize)
             throws IOException {
@@ -22,7 +22,7 @@ public class NetworkService implements Runnable {
     public void run() { // run the service
         try {
             for (;;) {
-                pool.execute(new Handler(serverSocket));
+                pool.execute(new ReceiveHandler(serverSocket));
             }
         } catch (Exception ex) {
             pool.shutdown();
@@ -30,14 +30,14 @@ public class NetworkService implements Runnable {
     }
 }
 
-class Handler implements Runnable {
+class ReceiveHandler implements Runnable {
     private final DatagramSocket socket;
-    Handler(DatagramSocket socket) { this.socket = socket; }
+    byte[] buf = new byte[256];
+    ReceiveHandler(DatagramSocket socket) { this.socket = socket; }
     public void run() {
         // read and service request on socket
         try {
             System.out.println("Start listening....");
-            byte[] buf = new byte[256];
 
             // receive request
             DatagramPacket packet = new DatagramPacket(buf, buf.length);
@@ -47,20 +47,49 @@ class Handler implements Runnable {
 
             System.out.println(new String(packet.getData(), 0, packet.getLength()));
 
-            // figure out response
-            String dString = "testing123";
+            NetworkService.senderPool.submit(new SendHandler(packet));
 
-            buf = dString.getBytes();
-
-            // send the response to the client at "address" and "port"
-            InetAddress address = packet.getAddress();
-            int port = packet.getPort();
-            packet = new DatagramPacket(buf, buf.length, address, port);
-            socket.send(packet);
 
         } catch (IOException e) {
             e.printStackTrace();
 
         }
+    }
+}
+
+
+class SendHandler implements Runnable{
+
+    private DatagramPacket packet;
+    byte[] buf = new byte[256];
+
+    public SendHandler(DatagramPacket packet){
+        this.packet = packet;
+    }
+    public void run(){
+        // get a datagram socket
+        String dString = "testing123";
+        System.out.println(dString);
+
+        buf = dString.getBytes();
+
+        // send the response to the client at "address" and "port"
+        InetAddress address = packet.getAddress();
+        int port = packet.getPort();
+        packet = new DatagramPacket(buf, buf.length, address, port);
+
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket();
+            socket.send(packet);
+            System.out.println("packet sent");
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            socket.close();
+        }
+
     }
 }

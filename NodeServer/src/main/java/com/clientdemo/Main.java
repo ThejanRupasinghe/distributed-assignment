@@ -39,7 +39,7 @@ class Parallel extends Thread{
 
         // send request
         byte[] buf = new byte[256];
-        byte[] addr = {(byte)123,(byte)231, (byte)108,(byte)249};
+        byte[] addr = {(byte)127,(byte)0, (byte)0,(byte)1};
         //byte[] addr = {127,0,0,1};
 
         InetAddress address = null;

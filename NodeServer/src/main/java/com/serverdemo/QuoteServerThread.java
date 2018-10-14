@@ -10,8 +10,7 @@ import java.net.InetAddress;
 public class QuoteServerThread extends Thread {
 
     protected DatagramSocket socket = null;
-    protected BufferedReader in = null;
-    protected boolean moreQuotes = true;
+    protected boolean flag = true;
 
     public QuoteServerThread() throws IOException {
         this("QuoteServerThread");
@@ -25,7 +24,7 @@ public class QuoteServerThread extends Thread {
 
     public void run() {
 
-        while(moreQuotes) {
+        while(flag) {
             try {
                 System.out.println("Start listening....");
                 byte[] buf = new byte[256];
@@ -51,7 +50,7 @@ public class QuoteServerThread extends Thread {
 
             } catch (IOException e) {
                 e.printStackTrace();
-                moreQuotes = false;
+                flag = false;
             }
         }
 
