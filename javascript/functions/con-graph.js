@@ -49,8 +49,8 @@ module.exports.serverHandle = (req, res, rTable, name) => {
             udp.send(rTable[k], {type: 'con-graph', ttl: parseInt(body.ttl) - 1}, (err, res1, body) => {
                 count += 1;
                 // body = JSON.parse(body);
-                Object.keys(body.rTable).forEach(x => {
-                    tbl[x] = body.rTable[x];
+                Object.keys(rTable).forEach(x => {
+                    tbl[x] = rTable[x];
                 });
                 if (count === keys.length) { // grab all responses
                     res.jsonp({success: true, rTable: tbl})

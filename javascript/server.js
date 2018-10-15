@@ -35,7 +35,7 @@ resource = argv['_'];
 
 
 // message handler
-udp.server(myAddress.port, (req, res) => {
+udp.init(myAddress.port, (req, res) => {
     let body = req.body;
     log.info('- incoming message', JSON.stringify(body));
     switch (body['type']) {

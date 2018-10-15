@@ -17,7 +17,7 @@ if (argv.port) {
 const rTable = {};
 
 // identification route. Not do much things (PING)
-udp.server(port, (req, res) => {
+udp.init(port, (req, res) => {
     let body = req.body;
     log.info('[server]', 'body', body);
     if (body.type === 'bs') {
