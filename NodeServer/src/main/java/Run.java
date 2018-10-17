@@ -33,7 +33,9 @@ public class Run {
 
 		if(server.getConfiguration()!=null){
 			if(server.bootstrap()){
+				while (true){
 
+				}
 			}
 		}
 	}
