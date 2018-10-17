@@ -50,6 +50,12 @@ public class NodesController {
 		return unregMessage;
 	}
 
+	/**
+	 * Parses the REGOK and ERROR response from the bootstrap server.
+	 *
+	 * @param response response string from the BS
+	 * @return list of already registered nodes in BS, null in any ERROR
+	 */
 	public static ArrayList<Node> parseRegNodeResponse(String response) {
 		String[] strings = response.split(" ");
 		int length = Integer.parseInt(strings[0]);
@@ -67,20 +73,20 @@ public class NodesController {
 					nodes = new ArrayList<>();
 					break;
 				case 9999:
-					//				logger.error("Failed. There is some error in the command");
+					//logger.error("Failed. There is some error in the command");
 					logger.error("Registration failed. Entry already in the table.");
 					break;
 				case 9998:
-					//				logger.error("Failed. Already registered to you. Unregister first.");
+					//logger.error("Failed. Already registered to you. Unregister first.");
 					logger.error("Registration failed. Invalid IP, Port or Username.");
 					break;
 				case 9997:
-					//				logger.error("Failed. Registered to another user. Try a different IP and port");
+					//logger.error("Failed. Registered to another user. Try a different IP and port");
 					logger.error("Registration failed. Bootstrap table is full.");
 					break;
 				// no 9996 error code in C server
 				case 9996:
-					//				logger.error("Failed. Cannot register. BS full.");
+					//logger.error("Failed. Cannot register. BS full.");
 					break;
 				default:
 					logger.info("Request is successful. Returning " + noOfNodes + " nodes.");

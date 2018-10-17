@@ -9,6 +9,11 @@ import java.net.UnknownHostException;
 
 public class NetworkController {
 
+	/**
+	 * Opens a datagram socket to any IP, Port and takes the Local IP
+	 *
+	 * @return Local IP of the connected network
+	 */
 	public static String getMyIP() {
 		String ip = null;
 		try (final DatagramSocket socket = new DatagramSocket()) {
@@ -25,6 +30,13 @@ public class NetworkController {
 		return ip;
 	}
 
+	/**
+	 * Checks a given port is acquired or not, by opening a TCP server socket and a Datagram socket
+	 * to the same port.
+	 *
+	 * @param port int port number
+	 * @return true if available, false otherwise
+	 */
 	public static boolean available(int port) {
 		ServerSocket ss = null;
 		DatagramSocket ds = null;
