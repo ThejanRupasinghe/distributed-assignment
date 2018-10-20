@@ -46,23 +46,34 @@ logger.info("Node : Bootstrap Server : ", bsNode);
 if (bsNode) {
 
     // initialize tcp connection to BS
-    tcp.init(bsNode.ip, bsNode.port);
+    tcp.init(bsNode.ip, bsNode.port, (error) => {
+        if (error != null) {
+            shutdown(1);
+        }
+    });
 
     // takes register message
     let regMsg = msgParser.generateREG(myNode);
 
     tcp.sendMessage(regMsg, (receiveMsg) => {
-        msgParser.parseREGOK(receiveMsg.toString(), (nodes, error) => {
+        msgParser.parseREGOK(receiveMsg.toString(), (nodes, noOfNodes, error) => {
             if (nodes != null) {
-                if (Object.keys(nodes).length === 0) {
+                if (noOfNodes === 0) {
                     logger.info("Node : Registration successful. No nodes registered in the system.");
+                    start();
                 } else {
-                    logger.info("Node : Request is successful. Returning " + Object.keys(nodes).length + " nodes.");
+                    logger.info("Node : Request is successful. Returning " + noOfNodes + " nodes.");
 
-                    logger.info("Node : Node List -" , nodes);
+                    logger.info("Node : Node List -", nodes);
+
+                    start();
+
+                    if (noOfNodes >= 4) {
+                        nodes = random.selectRandom(2, nodes);
+                    }
 
                     Object.keys(nodes).forEach(k => {
-                        udp.send(nodes[k], {type: 'join', name: name, address: myNode}, (err, res, body1) => {
+                        udp.send(nodes[k], {type: 'join', name: myNode.name, address: myNode}, (err, res, body1) => {
                             body1 = JSON.parse(body1);
                             if (body1['success']) {
                                 routingTable[k] = nodes[k];
@@ -92,81 +103,86 @@ if (bsNode) {
         });
     });
 
-    // udp.send(bs, {type: 'bs', name: name, address: myNode}, (err, res, body) => {
-    //     // give warning if there is any conflicts in current and received addresses.
-    //     logger.info('[body]', body);
-    //     // body = JSON.parse(body);
-    //     if (body) {
-    //
-    //     }
-    // });
 }
 
+// TODO: implement shutdown gracefully and trigger hook
+function shutdown(error) {
+    process.exit(error);
+}
+
+function start() {
+    udpStart();
+    cliStart();
+}
 
 // message handler
-// udp.init(myNode.port, (req, res) => {
-//     let body = req.body;
-//     logger.info('- incoming message', JSON.stringify(body));
-//     switch (body['type']) {
-//         case 'ping':
-//             break;
-//         case 'pong':
-//             break;
-//         case 'join': // name, address
-//             // log.info('Join - ', body['name'], body['address']);
-//             routingTable[body['name']] = body['address'];
-//             res.jsonp({success: true});
-//             break;
-//         case 'send-msg': // not reliable
-//             require('./functions/send-msg').serverHandle(req, res, routingTable, name);
-//             break;
-//         case 'send-msg-rel': // reliable
-//
-//             break;
-//         case 'con-graph':
-//             require('./functions/con-graph').serverHandle(req, res, routingTable, name);
-//             break;
-//         case 'delete':
-//             if (routingTable[msg.name]) {
-//                 delete routingTable[msg.name];
-//             }
-//             res.end();
-//             break;
-//         case 'force-delete':
-//             // call exit
-//             break;
-//     }
-// });
+function udpStart() {
+    udp.init(myNode.port, (req, res) => {
+        let body = req.body;
+        logger.info('- incoming message', JSON.stringify(body));
+        switch (body['type']) {
+            case 'ping':
+                break;
+            case 'pong':
+                break;
+            case 'join': // name, address
+                // log.info('Join - ', body['name'], body['address']);
+                routingTable[body['name']] = body['address'];
+                res.jsonp({success: true});
+                break;
+            case 'send-msg': // not reliable
+                require('./functions/send-msg').serverHandle(req, res, routingTable, name);
+                break;
+            case 'send-msg-rel': // reliable
+
+                break;
+            case 'con-graph':
+                require('./functions/con-graph').serverHandle(req, res, routingTable, name);
+                break;
+            case 'delete':
+                if (routingTable[msg.name]) {
+                    delete routingTable[msg.name];
+                }
+                res.end();
+                break;
+            case 'force-delete':
+                // call exit
+                break;
+        }
+    });
+}
 
 // CLI
-cli.init({
-    'send-msg': (params) => { // (target, msg, ttl) not reliable
-        require('./functions/send-msg').cli(params, routingTable, name);
-    },
-    'send-msg-rel': (params) => { // reliable (target, msg, ttl)
+function cliStart() {
+    cli.init({
+        'send-msg': (params) => { // (target, msg, ttl) not reliable
+            require('./functions/send-msg').cli(params, routingTable, name);
+        },
+        'send-msg-rel': (params) => { // reliable (target, msg, ttl)
 
-    },
-    'con-graph': (params) => { // ttl,
-        require('./functions/con-graph').cli(params, routingTable)
-    },
-    'delete': () => {
-        let count = 0;
-        Object.keys(routingTable).forEach(k => {
-            udp.send(routingTable[k], 'delete', {name: name}, () => {
-                count += 1;
-                if (count === Object.keys(routingTable).length) {
-                    process.exit();
-                }
+        },
+        'con-graph': (params) => { // ttl,
+            require('./functions/con-graph').cli(params, routingTable)
+        },
+        'delete': () => {
+            let count = 0;
+            Object.keys(routingTable).forEach(k => {
+                udp.send(routingTable[k], 'delete', {name: name}, () => {
+                    count += 1;
+                    if (count === Object.keys(routingTable).length) {
+                        process.exit();
+                    }
+                });
             });
-        });
-    },
-    'at': () => {
-        logger.print('your address table: ');
-        Object.keys(routingTable).forEach(a => {
-            logger.print('\t', a, ": ", routingTable[a]);
-        })
-    },
-    'name': () => {
-        logger.print(name);
-    }
-});
+        },
+        'at': () => {
+            logger.print('your address table: ');
+            Object.keys(routingTable).forEach(a => {
+                logger.print('\t', a, ": ", routingTable[a]);
+            })
+        },
+        'name': () => {
+            logger.print(name);
+        }
+    });
+}

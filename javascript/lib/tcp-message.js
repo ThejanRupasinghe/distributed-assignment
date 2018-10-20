@@ -16,6 +16,7 @@ module.exports.init = (ip, port, cb) => {
 
     client.on('error', (error) => {
         logger.error("TCP : ERROR :", error, "-", ip, ":", port);
+        cb(error);
     });
 };
 
