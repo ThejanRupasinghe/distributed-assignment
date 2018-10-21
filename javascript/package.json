@@ -16,6 +16,7 @@
     "minimist": "^1.2.0",
     "readline-async": "github:dannynemer/readline-async",
     "request": "^2.88.0",
-    "urlcode-json": "0.0.5"
+    "urlcode-json": "0.0.5",
+    "uuid": "^3.3.2"
   }
 }

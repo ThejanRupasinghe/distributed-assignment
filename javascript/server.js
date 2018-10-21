@@ -69,16 +69,19 @@ if (bsNode) {
                     start();
 
                     if (noOfNodes >= 4) {
-                        nodes = random.selectRandom(2, nodes);
+                        nodes = random.selectRandom(1, nodes);
                     }
 
                     Object.keys(nodes).forEach(k => {
-                        udp.send(nodes[k], {type: 'join', name: myNode.name, address: myNode}, (err, res, body1) => {
-                            body1 = JSON.parse(body1);
-                            if (body1['success']) {
-                                routingTable[k] = nodes[k];
-                            } else {
-                                logger.error('error');
+                        let node = nodes[k];
+                        udp.send(node, {type: msgParser.JOIN, node: myNode}, (res, err) => {
+                            if (err === null) {
+                                if (res.body.success) {
+                                    routingTable[k] = node;
+                                    logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                                } else {
+                                    logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                                }
                             }
                         });
                     })
@@ -88,15 +91,19 @@ if (bsNode) {
                 switch (error) {
                     case 9999:
                         logger.error("Node : Registration failed. Entry already in the table.");
+                        shutdown();
                         break;
                     case 9998:
                         logger.error("Node : Registration failed. Invalid IP, Port or Username.");
+                        shutdown();
                         break;
                     case 9997:
                         logger.error("Node : Registration failed. Bootstrap table is full.");
+                        shutdown();
                         break;
                     case "ERROR":
                         logger.error("Node : Invalid Registration Command.");
+                        shutdown();
                         break;
                 }
             }
@@ -119,16 +126,20 @@ function start() {
 function udpStart() {
     udp.init(myNode.port, (req, res) => {
         let body = req.body;
-        logger.info('- incoming message', JSON.stringify(body));
+        // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
             case 'ping':
                 break;
             case 'pong':
                 break;
-            case 'join': // name, address
-                // log.info('Join - ', body['name'], body['address']);
-                routingTable[body['name']] = body['address'];
-                res.jsonp({success: true});
+            case msgParser.JOIN: // name, address
+                routingTable[body.node.name] = {
+                    ip: body.node.ip,
+                    port: body.node.port
+                };
+                logger.info("Node : Added to routing table - " + body.node.ip + ":" + body.node.port)
+                // TODO: can handle routing table exceeding - success: false
+                res.send({type: msgParser.JOIN_OK, success: true});
                 break;
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);

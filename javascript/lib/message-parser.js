@@ -12,6 +12,13 @@ const LEAVE_OK = "LEAVEOK";
 const SER = "SER";
 const SER_OK = "SEROK";
 
+const REQ = "REQ";
+const ACK = "ACK";
+const RES = "RES";
+
+module.exports = {REQ, ACK, RES, JOIN, JOIN_OK};
+
+// *************** FOR BOOTSTRAP SERVER ******************
 module.exports.generateREG = (node) => {
     let message = REG + " " + node.ip + " " + node.port + " " + node.name;
     // 4 front digits and space = 5
@@ -43,7 +50,7 @@ module.exports.parseREGOK = (response, cb) => {
             default:
                 for (let i = 3; i <= noOfNodes * 3; i += 3) {
                     nodes[responseArr[i + 2]] = {
-                        ipAddr: responseArr[i],
+                        ip: responseArr[i],
                         port: parseInt(responseArr[i + 1]),
                     };
                 }
@@ -83,7 +90,77 @@ module.exports.parseUNREGOK = (response) => {
         return ERROR;
     }
 };
+// ****************** ENDS FOR BOOTSTRAP SERVER *********************
 
+
+// ****************** FOR NODE COMMUNICATION ********************
+
+// UDP MESSAGE FORMAT - length id operation etc
+module.exports.generateUDPMsg = (msgSend) => {
+    // TODO : message version is not attached
+    let message = msgSend.id + " ";
+
+    // TODO: implement other types - SEARCH
+    if (JOIN === msgSend.body.type) {
+        message += JOIN + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " " + msgSend.body.node.name;
+    } else if (LEAVE === msgSend.body.type) {
+        message += LEAVE + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " " + msgSend.body.node.name;
+    } else if (ACK === msgSend.body.type) {
+        message += ACK;
+    } else if (JOIN_OK === msgSend.body.type) {
+        if (msgSend.body.success) {
+            message += JOIN_OK + " 0";
+        } else {
+            message += JOIN_OK + " 9999";
+        }
+    }
+
+    // 4 front digits and space = 5
+    let packetLength = message.length + 5;
+    message = ("000" + packetLength).slice(-4) + " " + message;
+
+    return message;
+};
+
+module.exports.parseUDPMsg = (msgReceive, rinfo) => {
+    let msgReceiveArr = msgReceive.split(" ");
+
+    let id = msgReceiveArr[1];
+    let operation = msgReceiveArr[2];
+    let status = parseInt(msgReceiveArr[3]);
+
+    let udpStream = {
+        id: id,
+        body: {
+            node: {}
+        }
+    };
+
+    udpStream.body.type = operation;
+
+    if (JOIN === operation || LEAVE === operation) {
+        udpStream.type = REQ;
+        udpStream.body.node.ip = msgReceiveArr[3];
+        udpStream.body.node.port = msgReceiveArr[4];
+        udpStream.body.node.name = msgReceiveArr[5];
+    } else if (ACK === operation) {
+        udpStream.type = ACK;
+    } else if (JOIN_OK === operation || LEAVE_OK === operation) {
+        udpStream.type = RES;
+        // for the completeness adds ip and port
+        udpStream.body.node.ip = rinfo.address;
+        udpStream.body.node.port = rinfo.port;
+        if (status === 0) {
+            udpStream.body.success = true;
+        } else if (status === 9999) {
+            udpStream.body.success = false;
+        }
+    }
+
+    return udpStream;
+};
+
+// ****************** DEPRECATED ***********************
 module.exports.generateJOIN = (node) => {
     let message = JOIN + " " + node.ip + " " + node.port + " " + node.name;
     // 4 front digits and space = 5
@@ -168,3 +245,4 @@ module.exports.parseSEARCHOK = (response, cb) => {
         return ERROR;
     }
 };
+// ***********************************************

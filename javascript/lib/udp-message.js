@@ -1,8 +1,11 @@
 const dgram = require('dgram');
 const udpServer = dgram.createSocket('udp4');
+const msgParser = require('./message-parser');
+const logger = require('./logger');
+const uuid = require('uuid/v1');
 
 udpServer.on('listening', () => {
-    console.log('UDP server is listing...');
+    logger.info("UDP : UDP Server is listening.....");
 });
 
 const responseHandlersMap = {};
@@ -11,45 +14,52 @@ module.exports.init = (port, cb) => {
     udpServer.bind(port);
 
     udpServer.on('message', (msgStream, rinfo) => {
-        const udpStream = JSON.parse(msgStream.toString());       // parse the message
+        // const udpStream = JSON.parse(msgStream.toString());       // parse the message
+
+        logger.info("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
+
+        const udpStream = msgParser.parseUDPMsg(msgStream.toString(), rinfo);
 
         let resHandler = responseHandlersMap[udpStream.id];
 
-        if (udpStream.type === 'REQ') { // create req, res object to pass handler.
+        if (udpStream.type === msgParser.REQ) { // create req, res object to pass handler.
             // send ACK
-            const ack = JSON.stringify({type: 'ACK', ok: 1, id: udpStream.id}); // create the acknowledgement
+            const ack = msgParser.generateUDPMsg({body: {type: msgParser.ACK, ok: 1}, id: udpStream.id}); // create the acknowledgement
             udpServer.send(ack, 0, ack.length, rinfo.port, rinfo.address);     // send ack
+            logger.info("UDP : Sent - " + ack + " - " + rinfo.address + ":" + rinfo.port);
 
             const request = {  // create request object
                 body: udpStream.body,
                 rinfo: rinfo
             };
+
             const response = { // response object
-                jsonp: (data) => { // this is the function that sends the response
+                send: (data) => { // this is the function that sends the response
                     // create the response string with the results data
-                    const resString = JSON.stringify({
+                    const resString = msgParser.generateUDPMsg({
                         body: data,
                         id: udpStream.id,
-                        type: 'RES'
+                        type: msgParser.RES
                     });
                     // send the results TODO add ack if necessary (then the version will be added)
                     udpServer.send(resString, 0, resString.length, rinfo.port, rinfo.address);
+                    logger.info("UDP : Sent - " + resString + " - " + rinfo.address + ":" + rinfo.port);
                 }
             };
 
-
             // call the call back with request and response object.
             if (cb) cb(request, response);
-        } else if (udpStream.type === 'ACK') {
-            if(resHandler) {
+
+        } else if (udpStream.type === msgParser.ACK) {
+            if (resHandler) {
                 resHandler.ack = true;
                 resHandler.stopSending();
             }
-        } else if (udpStream.type === 'RES') {
-            if(resHandler && !resHandler.done) {
+        } else if (udpStream.type === msgParser.RES) {
+            if (resHandler && !resHandler.done) {
                 resHandler.stopSending();
                 resHandler.done = true; // not call the response handler two time
-                resHandler.handler(null, udpStream, udpStream.body);
+                resHandler.handler(udpStream, null);
             }
         }
     });
@@ -57,7 +67,7 @@ module.exports.init = (port, cb) => {
 
 
 module.exports.send = (target, data, cb) => {
-    const msgId = Math.random().toString().substr(2); // generate a unique random number
+    const msgId = uuid().split("-")[0]; // generate a unique random number
     let version = 0; // message version
 
     const fn = () => {
@@ -70,9 +80,10 @@ module.exports.send = (target, data, cb) => {
             id: msgId,
             version: version,
             body: data,
-            type: 'REQ'
+            type: msgParser.REQ
         };
-        msg_send = JSON.stringify(msg_send);
+        // msg_send = JSON.stringify(msg_send);
+        msg_send = msgParser.generateUDPMsg(msg_send);
 
         // send the message
         udpServer.send(msg_send, 0, msg_send.length, target.port, target.ip, (a, b) => {
@@ -90,6 +101,8 @@ module.exports.send = (target, data, cb) => {
                 return fn();
             }, 500);
         });
+
+        logger.info("UDP : Sent - " + msg_send + " - " + target.ip + ":" + target.port);
     };
 
     // put an interval to send the message until get an acknowledgement

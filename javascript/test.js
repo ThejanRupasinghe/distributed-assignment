@@ -3,17 +3,18 @@ const logger = require('./lib/logger');
 const net = require('net');
 const dgram = require('dgram');
 const udpServer = dgram.createSocket('udp4');
+const uuid = require('uuid/v1');
 
-let bsAddress = {
-    ip: '0.0.0.0',
-    port: 5051
-};
-
-tcp.init(bsAddress.ip, bsAddress.port);
-
-tcp.sendMessage("0034 REG 129.82.123.45 5001 432cd", (data)=>{
-    logger.info(data);
-});
+// let bsAddress = {
+//     ip: '0.0.0.0',
+//     port: 5051
+// };
+//
+// tcp.init(bsAddress.ip, bsAddress.port);
+//
+// tcp.sendMessage("0034 REG 129.82.123.45 5001 432cd", (data)=>{
+//     logger.info(data);
+// });
 
 // let response = "0051 REGOK 2 129.82.123.45 5001 abcd1234 64.12.123.190 34001 abcd5678";
 //
@@ -37,3 +38,7 @@ tcp.sendMessage("0034 REG 129.82.123.45 5001 432cd", (data)=>{
 // }
 //
 // console.log(body);
+
+console.log(Math.random().toString());
+
+console.log(uuid().split("-"));
