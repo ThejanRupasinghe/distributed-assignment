@@ -7,6 +7,8 @@ const udp = require('./lib/udp-message');
 const ipLib = require('ip');
 const msgParser = require('./lib/message-parser');
 
+const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
+
 // stores local ip and default port, later adds name
 let myNode = {
     ip: ipLib.address(),
@@ -38,6 +40,7 @@ if (argv.bsIP && argv.bsPort) {
 }
 
 // print out taken information
+logger.print("=========== ", myNode.name , ' ==============');
 logger.info("Node : Node Starting....");
 logger.info("Node : My Node : ", myNode);
 logger.info("Node : Bootstrap Server : ", bsNode);
@@ -84,8 +87,11 @@ if (bsNode) {
                                 }
                             }
                         });
-                    })
+                    });
                 }
+
+                // NOTE: check all node after 5 second
+                heartBeatAndDiscover();
 
             } else {
                 switch (error) {
@@ -110,6 +116,58 @@ if (bsNode) {
         });
     });
 
+}
+
+
+// ============= Check the liveness by heartbeat request and fill the routing table up to 4 entries
+function heartBeatAndDiscover() {
+    setInterval(() => {
+        // send live request to all nodes
+        Object.keys(routingTable).forEach(nodeKey => {
+            let node = routingTable[nodeKey];
+            udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
+                if(err !== null) {
+                    // This is failed
+                    logger.error(nodeKey, ' is dead');
+                    delete routingTable[nodeKey];  // remove from my routing table
+
+                    // inform to bootstrap server
+                    let unregMsg = msgParser.generateUNREG({
+                        ip: node.ip, port: node.port, name: nodeKey
+                    });
+                    tcp.init(bsNode.ip, bsNode.port, (error) => {
+                        console.log(error);
+                    });
+                    tcp.sendMessage(unregMsg, (receivedMsg) => {
+                        logger.ok('Inform to Bootstrap server about the missing');
+                    })
+                } else {
+                    logger.ok(nodeKey, ' is LIVE')
+                }
+            });
+        });
+
+        // check the routing table entry count and try to discover more
+        if(Object.keys(routingTable).length < 4) {
+            // discover
+            logger.warning('Not enough nodes in routing table. try to discover');
+            let discSendNode = random.pickOne(routingTable);
+            udp.send(discSendNode, {type: msgParser.DESC, node: myNode}, (res,err) => {
+                // connect here
+                udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
+                    if (err === null) {
+                        let node = res1.body.node;
+                        if (res1.body.success) {
+                            routingTable[res.body.node.name] = node;
+                            logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                        } else {
+                            logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                        }
+                    }
+                });
+            });
+        }
+    }, HEART_BEAT_TIME_OUT);
 }
 
 // TODO: implement shutdown gracefully and trigger hook
@@ -137,9 +195,17 @@ function udpStart() {
                     ip: body.node.ip,
                     port: body.node.port
                 };
-                logger.info("Node : Added to routing table - " + body.node.ip + ":" + body.node.port)
+                logger.info("Node : Added to routing table - " + body.node.ip + ":" + body.node.port);
                 // TODO: can handle routing table exceeding - success: false
                 res.send({type: msgParser.JOIN_OK, success: true});
+                break;
+            case msgParser.LIVE:
+                res.send({type: msgParser.LIVE_OK, success: true});
+                break;
+            case msgParser.DESC:
+                // pick a random node from my routing table and send
+                let pickedOne = random.pickOne(routingTable);
+                res.send({type: msgParser.DESC_OK, node: pickedOne, success: true});
                 break;
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
@@ -167,7 +233,7 @@ function udpStart() {
 function cliStart() {
     cli.init({
         'send-msg': (params) => { // (target, msg, ttl) not reliable
-            require('./functions/send-msg').cli(params, routingTable, name);
+            require('./functions/send-msg').cli(params, routingTable, myNode.name);
         },
         'send-msg-rel': (params) => { // reliable (target, msg, ttl)
 

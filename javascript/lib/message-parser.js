@@ -11,12 +11,17 @@ const LEAVE = "LEAVE";
 const LEAVE_OK = "LEAVEOK";
 const SER = "SER";
 const SER_OK = "SEROK";
+const LIVE = "LIVE";
+const LIVE_OK = "LIVE_OK";
+const DESC = "DESC";
+const DESC_OK = "DESC_OK";
 
 const REQ = "REQ";
 const ACK = "ACK";
 const RES = "RES";
 
-module.exports = {REQ, ACK, RES, JOIN, JOIN_OK};
+// TODO it is better we can export this by module.exports.CONSTS = {}
+module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DESC, DESC_OK};
 
 // *************** FOR BOOTSTRAP SERVER ******************
 module.exports.generateREG = (node) => {
@@ -113,6 +118,16 @@ module.exports.generateUDPMsg = (msgSend) => {
         } else {
             message += JOIN_OK + " 9999";
         }
+    } else if (LIVE === msgSend.body.type) {
+        message += LIVE + ' 1';
+    } else if (LIVE_OK === msgSend.body.type) {
+        message += LIVE_OK + ' 1';
+    } else if (DESC === msgSend.body.type) {
+        message += DESC + ' 1';
+    }else if (DESC_OK) {
+        message += DESC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name
+    } else {
+        message += JSON.stringify(msgSend.body);
     }
 
     // 4 front digits and space = 5
@@ -155,6 +170,20 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         } else if (status === 9999) {
             udpStream.body.success = false;
         }
+    } else if (LIVE === operation) {
+        udpStream.type = REQ;
+    } else if (LIVE_OK === operation) {
+        udpStream.type = RES;
+    } else if (DESC === operation) {
+        udpStream.type = REQ;
+    } else if (DESC_OK === operation) {
+        udpStream.type = RES;
+        console.log(msgReceive);
+        udpStream.body.node.ip = msgReceiveArr[4];
+        udpStream.body.node.port = msgReceiveArr[5];
+        udpStream.body.node.name = msgReceiveArr[6];
+    } else {
+        console.log('un handled UDP stream', udpStream);
     }
 
     return udpStream;

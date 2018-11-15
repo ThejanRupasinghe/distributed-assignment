@@ -1,7 +1,7 @@
 const net = require('net');
 const logger = require('./logger');
 
-var client = null;
+let client = null;
 
 module.exports.init = (ip, port, cb) => {
     client = new net.Socket();
@@ -10,7 +10,7 @@ module.exports.init = (ip, port, cb) => {
         logger.info("TCP : Connected to", ip, ":", port);
     });
 
-    client.on('close', function () {
+    client.on('close', () => {
         logger.info('TCP : Connection closed -', ip, ":", port);
     });
 
@@ -25,7 +25,7 @@ module.exports.sendMessage = (message, cb) => {
 
     logger.info("TCP : Sent - " + message);
 
-    client.on('data', function (data) {
+    client.on('data', (data) => {
         logger.info('TCP : Received - ' + data);
         if (cb) cb(data);
         client.destroy(); // kill client after server's response

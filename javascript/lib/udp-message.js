@@ -16,7 +16,7 @@ module.exports.init = (port, cb) => {
     udpServer.on('message', (msgStream, rinfo) => {
         // const udpStream = JSON.parse(msgStream.toString());       // parse the message
 
-        logger.info("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
+        // logger.info("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
 
         const udpStream = msgParser.parseUDPMsg(msgStream.toString(), rinfo);
 
@@ -26,7 +26,7 @@ module.exports.init = (port, cb) => {
             // send ACK
             const ack = msgParser.generateUDPMsg({body: {type: msgParser.ACK, ok: 1}, id: udpStream.id}); // create the acknowledgement
             udpServer.send(ack, 0, ack.length, rinfo.port, rinfo.address);     // send ack
-            logger.info("UDP : Sent - " + ack + " - " + rinfo.address + ":" + rinfo.port);
+            // logger.info("UDP : Sent - " + ack + " - " + rinfo.address + ":" + rinfo.port);
 
             const request = {  // create request object
                 body: udpStream.body,
@@ -43,7 +43,7 @@ module.exports.init = (port, cb) => {
                     });
                     // send the results TODO add ack if necessary (then the version will be added)
                     udpServer.send(resString, 0, resString.length, rinfo.port, rinfo.address);
-                    logger.info("UDP : Sent - " + resString + " - " + rinfo.address + ":" + rinfo.port);
+                    // logger.info("UDP : Sent - " + resString + " - " + rinfo.address + ":" + rinfo.port);
                 }
             };
 
