@@ -1,128 +1,265 @@
-//<editor-fold desc="imports">
 const random = require('./lib/random');
 const cli = require('./lib/cli');
-const log = require('./lib/logger');
+const logger = require('./lib/logger');
 const minimist = require('minimist');
+const tcp = require('./lib/tcp-message');
 const udp = require('./lib/udp-message');
-//</editor-fold>
+const ipLib = require('ip');
+const msgParser = require('./lib/message-parser');
 
-let argv, name = '';
-let myAddress = {
-    ip: '127.0.0.1',
-    port: 40000
+const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
+
+// stores local ip and default port, later adds name
+let myNode = {
+    ip: ipLib.address(),
+    port: 4000,
+    name: 'node_' + ipLib.address()
 };
 
-// for central node
-const rTable = {};
-let resource = [];
+// routing table
+const routingTable = {};
 
-const ERRORCODE = 'ECONNREFUSED';
+// stores bootstrap server ip and port
+let bsNode;
 
 // take command line arguments (port, bs)
-argv = minimist(process.argv.slice(2));
+let argv = minimist(process.argv.slice(2));
 
 // init according to argv
 if (argv.port) {
-    myAddress.port = argv.port;
-    name = 'node_' + (myAddress.port - 4000);
+    myNode.port = argv.port;
 }
 if (argv.name) {
-    name = argv.name;
+    myNode.name = argv.name;
 }
-log.print('----------- ', name, ' -----------');
 
-resource = argv['_'];
+if (argv.bsIP && argv.bsPort) {
+    bsNode = {};
+    bsNode.ip = argv.bsIP;
+    bsNode.port = argv.bsPort;
+}
 
+// print out taken information
+logger.print("=========== ", myNode.name , ' ==============');
+logger.info("Node : Node Starting....");
+logger.info("Node : My Node : ", myNode);
+logger.info("Node : Bootstrap Server : ", bsNode);
 
-// message handler
-udp.init(myAddress.port, (req, res) => {
-    let body = req.body;
-    log.info('- incoming message', JSON.stringify(body));
-    switch (body['type']) {
-        case 'ping':
-            break;
-        case 'pong':
-            break;
-        case 'join': // name, address
-            // log.info('Join - ', body['name'], body['address']);
-            rTable[body['name']] = body['address'];
-            res.jsonp({success: true});
-            break;
-        case 'send-msg': // not reliable
-            require('./functions/send-msg').serverHandle(req, res, rTable, name);
-            break;
-        case 'send-msg-rel': // reliable
+// initial join to from bootstrap server
+if (bsNode) {
 
-            break;
-        case 'con-graph':
-            require('./functions/con-graph').serverHandle(req, res, rTable, name);
-            break;
-        case 'delete':
-            if (rTable[msg.name]) {
-                delete rTable[msg.name];
+    // initialize tcp connection to BS
+    tcp.init(bsNode.ip, bsNode.port, (error) => {
+        if (error != null) {
+            shutdown(1);
+        }
+    });
+
+    // takes register message
+    let regMsg = msgParser.generateREG(myNode);
+
+    tcp.sendMessage(regMsg, (receiveMsg) => {
+        msgParser.parseREGOK(receiveMsg.toString(), (nodes, noOfNodes, error) => {
+            if (nodes != null) {
+                if (noOfNodes === 0) {
+                    logger.info("Node : Registration successful. No nodes registered in the system.");
+                    start();
+                } else {
+                    logger.info("Node : Request is successful. Returning " + noOfNodes + " nodes.");
+
+                    logger.info("Node : Node List -", nodes);
+
+                    start();
+
+                    if (noOfNodes >= 4) {
+                        nodes = random.selectRandom(1, nodes);
+                    }
+
+                    Object.keys(nodes).forEach(k => {
+                        let node = nodes[k];
+                        udp.send(node, {type: msgParser.JOIN, node: myNode}, (res, err) => {
+                            if (err === null) {
+                                if (res.body.success) {
+                                    routingTable[k] = node;
+                                    logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                                } else {
+                                    logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                                }
+                            }
+                        });
+                    });
+                }
+
+                // NOTE: check all node after 5 second
+                heartBeatAndDiscover();
+
+            } else {
+                switch (error) {
+                    case 9999:
+                        logger.error("Node : Registration failed. Entry already in the table.");
+                        shutdown();
+                        break;
+                    case 9998:
+                        logger.error("Node : Registration failed. Invalid IP, Port or Username.");
+                        shutdown();
+                        break;
+                    case 9997:
+                        logger.error("Node : Registration failed. Bootstrap table is full.");
+                        shutdown();
+                        break;
+                    case "ERROR":
+                        logger.error("Node : Invalid Registration Command.");
+                        shutdown();
+                        break;
+                }
             }
-            res.end();
-            break;
-        case 'force-delete':
-            // call exit
-            break;
-    }
-});
+        });
+    });
 
-bs = {
-    port: argv['bs'],
-    address: '127.0.0.1'
-};
-// initial join request from bootstrap server
-if (bs) {
-    udp.send(bs, {type: 'bs', name: name, address: myAddress}, (err, res, body) => {
-        // give warning if there is any conflicts in current and received addresses.
-        log.info('[body]', body);
-        // body = JSON.parse(body);
-        if (body) {
-            Object.keys(body).forEach(k => {
-                udp.send(body[k], {type: 'join', name: name, address: myAddress}, (err, res, body1) => {
-                    // body1 = JSON.parse(body1);
-                    if (body1['success']) {
-                        rTable[k] = body[k];
-                    } else {
-                        log.error('error');
+}
+
+
+// ============= Check the liveness by heartbeat request and fill the routing table up to 4 entries
+function heartBeatAndDiscover() {
+    setInterval(() => {
+        // send live request to all nodes
+        Object.keys(routingTable).forEach(nodeKey => {
+            let node = routingTable[nodeKey];
+            udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
+                if(err !== null) {
+                    // This is failed
+                    logger.error(nodeKey, ' is dead');
+                    delete routingTable[nodeKey];  // remove from my routing table
+
+                    // inform to bootstrap server
+                    let unregMsg = msgParser.generateUNREG({
+                        ip: node.ip, port: node.port, name: nodeKey
+                    });
+                    tcp.init(bsNode.ip, bsNode.port, (error) => {
+                        console.log(error);
+                    });
+                    tcp.sendMessage(unregMsg, (receivedMsg) => {
+                        logger.ok('Inform to Bootstrap server about the missing');
+                    })
+                } else {
+                    logger.ok(nodeKey, ' is LIVE')
+                }
+            });
+        });
+
+        // check the routing table entry count and try to discover more
+        if(Object.keys(routingTable).length < 4) {
+            // discover
+            logger.warning('Not enough nodes in routing table. try to discover');
+            let discSendNode = random.pickOne(routingTable);
+            udp.send(discSendNode, {type: msgParser.DESC, node: myNode}, (res,err) => {
+                // connect here
+                udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
+                    if (err === null) {
+                        let node = res1.body.node;
+                        if (res1.body.success) {
+                            routingTable[res.body.node.name] = node;
+                            logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                        } else {
+                            logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                        }
                     }
                 });
-            })
+            });
+        }
+    }, HEART_BEAT_TIME_OUT);
+}
+
+// TODO: implement shutdown gracefully and trigger hook
+function shutdown(error) {
+    process.exit(error);
+}
+
+function start() {
+    udpStart();
+    cliStart();
+}
+
+// message handler
+function udpStart() {
+    udp.init(myNode.port, (req, res) => {
+        let body = req.body;
+        // logger.info('- incoming message', JSON.stringify(body));
+        switch (body['type']) {
+            case 'ping':
+                break;
+            case 'pong':
+                break;
+            case msgParser.JOIN: // name, address
+                routingTable[body.node.name] = {
+                    ip: body.node.ip,
+                    port: body.node.port
+                };
+                logger.info("Node : Added to routing table - " + body.node.ip + ":" + body.node.port);
+                // TODO: can handle routing table exceeding - success: false
+                res.send({type: msgParser.JOIN_OK, success: true});
+                break;
+            case msgParser.LIVE:
+                res.send({type: msgParser.LIVE_OK, success: true});
+                break;
+            case msgParser.DESC:
+                // pick a random node from my routing table and send
+                let pickedOne = random.pickOne(routingTable);
+                res.send({type: msgParser.DESC_OK, node: pickedOne, success: true});
+                break;
+            case 'send-msg': // not reliable
+                require('./functions/send-msg').serverHandle(req, res, routingTable, name);
+                break;
+            case 'send-msg-rel': // reliable
+
+                break;
+            case 'con-graph':
+                require('./functions/con-graph').serverHandle(req, res, routingTable, name);
+                break;
+            case 'delete':
+                if (routingTable[msg.name]) {
+                    delete routingTable[msg.name];
+                }
+                res.end();
+                break;
+            case 'force-delete':
+                // call exit
+                break;
         }
     });
 }
 
 // CLI
-cli.init({
-    'send-msg': (params) => { // (target, msg, ttl) not reliable
-        require('./functions/send-msg').cli(params, rTable, name);
-    },
-    'send-msg-rel': (params) => { // reliable (target, msg, ttl)
+function cliStart() {
+    cli.init({
+        'send-msg': (params) => { // (target, msg, ttl) not reliable
+            require('./functions/send-msg').cli(params, routingTable, myNode.name);
+        },
+        'send-msg-rel': (params) => { // reliable (target, msg, ttl)
 
-    },
-    'con-graph': (params) => { // ttl,
-        require('./functions/con-graph').cli(params, rTable)
-    },
-    'delete': () => {
-        let count = 0;
-        Object.keys(rTable).forEach(k => {
-            udp.send(rTable[k], 'delete', {name: name}, () => {
-                count += 1;
-                if (count === Object.keys(rTable).length) {
-                    process.exit();
-                }
+        },
+        'con-graph': (params) => { // ttl,
+            require('./functions/con-graph').cli(params, routingTable)
+        },
+        'delete': () => {
+            let count = 0;
+            Object.keys(routingTable).forEach(k => {
+                udp.send(routingTable[k], 'delete', {name: name}, () => {
+                    count += 1;
+                    if (count === Object.keys(routingTable).length) {
+                        process.exit();
+                    }
+                });
             });
-        });
-    },
-    'at': () => {
-        log.print('your address table: ');
-        Object.keys(rTable).forEach(a => {
-            log.print('\t', a, ": ", rTable[a]);
-        })
-    },
-    'name': () => {
-        log.print(name);
-    }
-});
+        },
+        'at': () => {
+            logger.print('your address table: ');
+            Object.keys(routingTable).forEach(a => {
+                logger.print('\t', a, ": ", routingTable[a]);
+            })
+        },
+        'name': () => {
+            logger.print(name);
+        }
+    });
+}
