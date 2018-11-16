@@ -128,7 +128,7 @@ function heartBeatAndDiscover() {
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
                 if (err !== null) {
                     // This is failed
-                    logger.error(nodeKey, ' is dead');
+                    logger.error("Node :", nodeKey, 'is dead');
                     delete routingTable[nodeKey];  // remove from my routing table
 
                     // inform to bootstrap server
@@ -136,13 +136,13 @@ function heartBeatAndDiscover() {
                         ip: node.ip, port: node.port, name: nodeKey
                     });
                     tcp.init(bsNode.ip, bsNode.port, (error) => {
-                        console.log(error);
+                        logger.error(error);
                     });
                     tcp.sendMessage(unregMsg, (receivedMsg) => {
-                        logger.ok('Inform to Bootstrap server about the missing');
+                        logger.ok('Node : Inform to Bootstrap server about the missing');
                     })
                 } else {
-                    logger.ok(nodeKey, ' is LIVE')
+                    logger.ok("Node :", nodeKey, 'is LIVE')
                 }
             });
         });
@@ -150,7 +150,7 @@ function heartBeatAndDiscover() {
         // check the routing table entry count and try to discover more
         if (Object.keys(routingTable).length < 4) {
             // discover
-            logger.warning('Not enough nodes in routing table. try to discover');
+            logger.warning('Node : Not enough nodes in routing table. try to discover');
             discover();
         }
     }, HEART_BEAT_TIME_OUT);
@@ -165,23 +165,50 @@ function discover() {
     if (discSendNode != null) {
         udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
             // connect here
-            udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
-                if (err === null) {
-                    let node = res1.body.node;
-                    if (res1.body.success) {
-                        routingTable[res.body.node.name] = node;
-                        logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
-                    } else {
-                        logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+            // if the given one is not myNode or not in my routing table add
+            if (!((res.body.node.name in routingTable) || (res.body.node.name === myNode.name))) {
+                udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
+                    if (err === null) {
+                        let node = res1.body.node;
+                        if (res1.body.success) {
+                            routingTable[res.body.node.name] = node;
+                            logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                        } else {
+                            logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                        }
                     }
-                }
-            });
+                });
+            }
         });
     }
 }
 
 // TODO: implement shutdown gracefully and trigger hook
 function shutdown(error) {
+    if (error === 0) {
+        Object.keys(routingTable).forEach(nodeKey => {
+            let node = routingTable[nodeKey];
+            udp.send(node, {type: msgParser.LEAVE, node: myNode}, (res, err) => {
+                if (err !== null) {
+
+                    // TODO: leave_ok from every one and then unreg from BS
+
+                    // inform to bootstrap server
+                    let unregMsg = msgParser.generateUNREG({
+                        ip: node.ip, port: node.port, name: nodeKey
+                    });
+                    tcp.init(bsNode.ip, bsNode.port, (error) => {
+                        logger.error(error);
+                    });
+                    tcp.sendMessage(unregMsg, (receivedMsg) => {
+                        logger.ok('Inform to Bootstrap server about the missing');
+                    })
+                } else {
+                    logger.ok(nodeKey, ' is LIVE')
+                }
+            });
+        });
+    }
     process.exit(error);
 }
 
@@ -269,7 +296,10 @@ function cliStart() {
             })
         },
         'name': () => {
-            logger.print(name);
+            logger.print(myNode.name);
+        },
+        'exit': () => {
+            shutdown(0);
         }
     });
 }

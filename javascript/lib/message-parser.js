@@ -21,7 +21,7 @@ const ACK = "ACK";
 const RES = "RES";
 
 // TODO it is better we can export this by module.exports.CONSTS = {}
-module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DISC, DISC_OK};
+module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DISC, DISC_OK, LEAVE, LEAVE_OK};
 
 // *************** FOR BOOTSTRAP SERVER ******************
 module.exports.generateREG = (node) => {
@@ -178,12 +178,11 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         udpStream.type = REQ;
     } else if (DISC_OK === operation) {
         udpStream.type = RES;
-        console.log(msgReceive);
         udpStream.body.node.ip = msgReceiveArr[4];
         udpStream.body.node.port = msgReceiveArr[5];
         udpStream.body.node.name = msgReceiveArr[6];
     } else {
-        console.log('un handled UDP stream', udpStream);
+        logger.error('Message Parser : Unhandled UDP stream', udpStream);
     }
 
     return udpStream;
