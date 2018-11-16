@@ -40,7 +40,7 @@ if (argv.bsIP && argv.bsPort) {
 }
 
 // print out taken information
-logger.print("=========== ", myNode.name , ' ==============');
+logger.print("=========== ", myNode.name, ' ==============');
 logger.info("Node : Node Starting....");
 logger.info("Node : My Node : ", myNode);
 logger.info("Node : Bootstrap Server : ", bsNode);
@@ -126,7 +126,7 @@ function heartBeatAndDiscover() {
         Object.keys(routingTable).forEach(nodeKey => {
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
-                if(err !== null) {
+                if (err !== null) {
                     // This is failed
                     logger.error(nodeKey, ' is dead');
                     delete routingTable[nodeKey];  // remove from my routing table
@@ -138,7 +138,7 @@ function heartBeatAndDiscover() {
                     tcp.init(bsNode.ip, bsNode.port, (error) => {
                         console.log(error);
                     });
-                    tcp.sendMessage(unregMsg, (receivedMsg) => {
+                    tcp.sendMessage(unregMsg, () => {
                         logger.ok('Inform to Bootstrap server about the missing');
                     })
                 } else {
@@ -148,23 +148,27 @@ function heartBeatAndDiscover() {
         });
 
         // check the routing table entry count and try to discover more
-        if(Object.keys(routingTable).length < 4) {
+        if (Object.keys(routingTable).length < 4 && Object.keys(routingTable).length > 0) {
             // discover
             logger.warning('Not enough nodes in routing table. try to discover');
             let discSendNode = random.pickOne(routingTable);
-            udp.send(discSendNode, {type: msgParser.DESC, node: myNode}, (res,err) => {
+            udp.send(discSendNode, {type: msgParser.DESC, node: myNode}, (res) => {
                 // connect here
-                udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
-                    if (err === null) {
-                        let node = res1.body.node;
-                        if (res1.body.success) {
-                            routingTable[res.body.node.name] = node;
-                            logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
-                        } else {
-                            logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                if (res.body.node.name === myNode.name) {
+                    logger.warning('Received my information as new node. No joining.')
+                } else {
+                    udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
+                        if (err === null) {
+                            let node = res1.body.node;
+                            if (res1.body.success) {
+                                routingTable[res.body.node.name] = node;
+                                logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                            } else {
+                                logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                            }
                         }
-                    }
-                });
+                    });
+                }
             });
         }
     }, HEART_BEAT_TIME_OUT);

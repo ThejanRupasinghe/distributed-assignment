@@ -1,5 +1,3 @@
-const logger = require('./logger');
-
 const REG = "REG";
 const REG_OK = "REGOK";
 const ERROR = "ERROR";
@@ -178,7 +176,6 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         udpStream.type = REQ;
     } else if (DESC_OK === operation) {
         udpStream.type = RES;
-        console.log(msgReceive);
         udpStream.body.node.ip = msgReceiveArr[4];
         udpStream.body.node.port = msgReceiveArr[5];
         udpStream.body.node.name = msgReceiveArr[6];
