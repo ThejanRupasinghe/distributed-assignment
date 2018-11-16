@@ -41,9 +41,9 @@ if (argv.bsIP && argv.bsPort) {
 
 // print out taken information
 logger.ok("=========== ", myNode.name, ' ==============');
-logger.info("Node : Node Starting....");
-logger.info("Node : My Node : ", myNode);
-logger.info("Node : Bootstrap Server : ", bsNode);
+logger.info("Node: Node Starting....");
+logger.info("Node: My Node: ", myNode);
+logger.info("Node: Bootstrap Server: ", bsNode);
 
 // initial join to from bootstrap server
 if (bsNode) {
@@ -51,7 +51,7 @@ if (bsNode) {
     // initialize tcp connection to BS
     tcp.init(bsNode.ip, bsNode.port, (error) => {
         if (error != null) {
-            logger.error("Node : Error connecting to Bootstrap Server");
+            logger.error("Node: Error connecting to Bootstrap Server");
             logger.error(error);
             shutdown(1);
         }
@@ -65,12 +65,12 @@ if (bsNode) {
         msgParser.parseREGOK(receiveMsg.toString(), (nodes, noOfNodes, error) => {
             if (nodes != null) {
                 if (noOfNodes === 0) {
-                    logger.info("Node : Registration successful. No nodes registered in the system.");
+                    logger.info("Node: Registration successful. No nodes registered in the system.");
                     start();
                 } else {
-                    logger.info("Node : Request is successful. Returning " + noOfNodes + " nodes.");
+                    logger.info("Node: Request is successful. Returning " + noOfNodes + " nodes.");
 
-                    logger.info("Node : Node List -", nodes);
+                    logger.info("Node: Node List -", nodes);
 
                     start();
 
@@ -84,31 +84,31 @@ if (bsNode) {
                             if (err === null) {
                                 if (res.body.success) {
                                     routingTable[k] = node;
-                                    logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                                    logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                                 } else {
-                                    logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                                    logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
                                 }
                             }
                         });
                     });
                 }
 
-                // NOTE: check all node after 5 second
+                // NOTE: check all nodes after 5 seconds
                 heartBeatAndDiscover();
 
             } else {
                 switch (error) {
                     case 9999:
-                        logger.error("Node : Registration failed. Entry already in the table.");
+                        logger.error("Node: Registration failed. Entry already in the table.");
                         break;
                     case 9998:
-                        logger.error("Node : Registration failed. Invalid IP, Port or Username.");
+                        logger.error("Node: Registration failed. Invalid IP, Port or Username.");
                         break;
                     case 9997:
-                        logger.error("Node : Registration failed. Bootstrap table is full.");
+                        logger.error("Node: Registration failed. Bootstrap table is full.");
                         break;
                     case "ERROR":
-                        logger.error("Node : Invalid Registration Command.");
+                        logger.error("Node: Invalid Registration Command.");
                         break;
                 }
                 shutdown(1);
@@ -130,11 +130,11 @@ function heartBeatAndDiscover() {
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
                 if (err !== null) {
-                    // This is failed
-                    logger.error("Node :", nodeKey, 'is dead');
+                    // This node has failed
+                    logger.error("Node:", nodeKey, 'is dead');
                     delete routingTable[nodeKey];  // remove from my routing table
 
-                    // inform to bootstrap server
+                    // inform bootstrap server
                     let unregMsg = msgParser.generateUNREG({
                         ip: node.ip, port: node.port, name: nodeKey
                     });
@@ -142,10 +142,10 @@ function heartBeatAndDiscover() {
                         logger.error(error);
                     });
                     tcp.sendMessage(unregMsg, (receivedMsg) => {
-                        logger.ok('Node : Inform to Bootstrap server about the missing');
+                        logger.ok('Node: Inform Bootstrap server about the missing node');
                     })
                 } else {
-                    logger.ok("Node :", nodeKey, 'is LIVE')
+                    logger.ok("Node:", nodeKey, 'is LIVE')
                 }
             });
         });
@@ -153,7 +153,7 @@ function heartBeatAndDiscover() {
         // check the routing table entry count and try to discover more
         if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
             // discover
-            logger.warning('Node : Not enough nodes in routing table. try to discover');
+            logger.warning('Node: Not enough nodes in routing table. try to discover');
             discover();
         }
     }, HEART_BEAT_TIME_OUT);
@@ -175,9 +175,9 @@ function discover() {
                     let node = res1.body.node;
                     if (res1.body.success) {
                         routingTable[res.body.node.name] = node;
-                        logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                        logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                     } else {
-                        logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                        logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
                     }
                 }
             });
@@ -192,14 +192,14 @@ function discover() {
  */
 function shutdown(error) {
     if (error === 0) {
-        logger.warning("Node : Gracefully shutting down.....");
+        logger.warning("Node: Gracefully shutting down.....");
         // TODO: stop discovery first
 
         let leaveCount = 0;
         let totalRoutingTableCount = Object.keys(routingTable).length;
 
         if (totalRoutingTableCount === 0) {
-            logger.ok("Node : Leaving");
+            logger.ok("Node: Leaving");
             process.exit(0);
         }
 
@@ -220,7 +220,7 @@ function shutdown(error) {
                             logger.error(error);
                         });
                         tcp.sendMessage(unregMsg, (receivedMsg) => {
-                            logger.ok("Node : Leaving");
+                            logger.ok("Node: Leaving");
                             process.exit(error);
                         });
                     }
@@ -261,7 +261,7 @@ function udpStart() {
                     ip: body.node.ip,
                     port: body.node.port
                 };
-                logger.info("Node : Added to routing table - " + body.node.ip + ":" + body.node.port);
+                logger.info("Node: Added to routing table - " + body.node.ip + ":" + body.node.port);
                 // TODO: can handle routing table exceeding - success: false
                 res.send({type: msgParser.JOIN_OK, success: true});
                 break;
@@ -275,12 +275,12 @@ function udpStart() {
                 break;
             case msgParser.LEAVE:
                 delete routingTable[body.node.name];
-                logger.info("Node : Removed from routing table - " + body.node.ip + ":" + body.node.port);
+                logger.info("Node: Removed from routing table - " + body.node.ip + ":" + body.node.port);
 
                 res.send({type: msgParser.LEAVE_OK, success: true});
                 break;
             case msgParser.SER:
-                //TODO: complete
+            //TODO: complete
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;

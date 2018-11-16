@@ -5,12 +5,13 @@ const log = require('../lib/logger');
 const ERRORCODE = 'ECONNREFUSED';
 
 module.exports.cli = (params, rTable, name) => {
-    if(params['target']) {
+    if (params['target']) {
         let targetName = params['target'];
         let message = params['msg'] || '-- empty message --';
 
         const funcRequestSender = (sendAddr, ttl) => {
-            udp.send(sendAddr, {type: 'send-msg',
+            udp.send(sendAddr, {
+                type: 'send-msg',
                 ttl: ttl,
                 msg: message,
                 from: name,
@@ -43,7 +44,7 @@ module.exports.cli = (params, rTable, name) => {
 
 module.exports.serverHandle = (req, res, rTable, name) => {
     let body = req.body;
-    if(body.targetName === name) {
+    if (body.targetName === name) {
         log.print('Incoming message => ', body.msg);
         log.print('\t from => ', body.from);
         res.jsonp({success: true, msg: 'got it'});
@@ -56,7 +57,7 @@ module.exports.serverHandle = (req, res, rTable, name) => {
                 from: body.from,
                 targetName: body.targetName
             }, (err1, res1, body1) => {
-                if(err1 && err1.code === ERRORCODE) {
+                if (err1 && err1.code === ERRORCODE) {
                     log.error(sendAddr, 'is not live ...');
                     delete rTable[body.targetName];
                     let randomPick = random.pickOne(rTable);
@@ -73,7 +74,7 @@ module.exports.serverHandle = (req, res, rTable, name) => {
             funcMessageSender(rTable[body.targetName], parseInt(body.ttl) - 1);
             res.jsonp({success: true, msg: 'Fount in the next hope'});
         } else {
-            if(parseInt(body.ttl) > 1) {
+            if (parseInt(body.ttl) > 1) {
                 log.warning('Dont know ', body.targetName);
                 delete rTable[body.targetName];
                 let randomPick = random.pickOne(rTable);

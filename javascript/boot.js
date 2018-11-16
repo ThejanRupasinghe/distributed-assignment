@@ -35,7 +35,7 @@ cli.init({
     'at': () => {
         log.info('your address table: ');
         Object.keys(rTable).forEach(a => {
-            log.info('\t', a, ": ", rTable[a]);
+            log.info('\t', a, ":", rTable[a]);
         })
     }
 });
