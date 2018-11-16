@@ -13,15 +13,15 @@ const SER = "SER";
 const SER_OK = "SEROK";
 const LIVE = "LIVE";
 const LIVE_OK = "LIVE_OK";
-const DESC = "DESC";
-const DESC_OK = "DESC_OK";
+const DISC = "DISC";
+const DISC_OK = "DISC_OK";
 
 const REQ = "REQ";
 const ACK = "ACK";
 const RES = "RES";
 
 // TODO it is better we can export this by module.exports.CONSTS = {}
-module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DESC, DESC_OK};
+module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DISC, DISC_OK};
 
 // *************** FOR BOOTSTRAP SERVER ******************
 module.exports.generateREG = (node) => {
@@ -122,10 +122,10 @@ module.exports.generateUDPMsg = (msgSend) => {
         message += LIVE + ' 1';
     } else if (LIVE_OK === msgSend.body.type) {
         message += LIVE_OK + ' 1';
-    } else if (DESC === msgSend.body.type) {
-        message += DESC + ' 1';
-    }else if (DESC_OK) {
-        message += DESC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name
+    } else if (DISC === msgSend.body.type) {
+        message += DISC + ' 1';
+    } else if (DISC_OK) {
+        message += DISC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name
     } else {
         message += JSON.stringify(msgSend.body);
     }
@@ -174,9 +174,9 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         udpStream.type = REQ;
     } else if (LIVE_OK === operation) {
         udpStream.type = RES;
-    } else if (DESC === operation) {
+    } else if (DISC === operation) {
         udpStream.type = REQ;
-    } else if (DESC_OK === operation) {
+    } else if (DISC_OK === operation) {
         udpStream.type = RES;
         console.log(msgReceive);
         udpStream.body.node.ip = msgReceiveArr[4];
