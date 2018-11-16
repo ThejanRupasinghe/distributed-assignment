@@ -199,13 +199,13 @@ function discover() {
     udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
         // connect here
         // if the given one is not myNode or not in my routing table add
-        if (res.body && !routingTable[res.body.node.name] && res.body.node.name !== myNode.name) {
-            // if (!((res.body.node.name in routingTable) || (res.body.node.name === myNode.name))) {
+        if (res.body && !routingTable[res.body.node.ip+":"+res.body.node.port] && res.body.node.ip !== myNode.ip) {
+            // if (!((res.body.node.ip in routingTable) || (res.body.node.ip === myNode.ip))) {
             udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
                 if (err === null) {
                     let node = res1.body.node;
                     if (res1.body.success) {
-                        routingTable[res.body.node.name] = node;
+                        routingTable[res.body.node.ip+":"+res.body.node.port] = node;
                         logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                     } else {
                         logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
@@ -294,7 +294,7 @@ function udpStart() {
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
             case msgParser.JOIN: // name, address
-                routingTable[body.node.name] = {
+                routingTable[body.node.ip+":"+body.node.port] = {
                     ip: body.node.ip,
                     port: body.node.port
                 };
@@ -314,7 +314,7 @@ function udpStart() {
                 break;
 
             case msgParser.LEAVE:
-                delete routingTable[body.node.name];
+                delete routingTable[body.node.ip+":"+body.node.port];
                 logger.info("Node: Removed from routing table - " + body.node.ip + ":" + body.node.port);
 
                 res.send({type: msgParser.LEAVE_OK, success: true});
@@ -340,15 +340,6 @@ function udpStart() {
                 }
                 logger.ok("Hop Count - " + body.hopCount + "\n----------------------------");
                 break;
-            case 'delete':
-                if (routingTable[msg.name]) {
-                    delete routingTable[msg.name];
-                }
-                res.end();
-                break;
-            case 'force-delete':
-                // call exit
-                break;
         }
     });
 }
@@ -358,17 +349,6 @@ function udpStart() {
  */
 function cliStart() {
     cli.init({
-        'delete': () => {
-            let count = 0;
-            Object.keys(routingTable).forEach(k => {
-                udp.send(routingTable[k], 'delete', {name: name}, () => {
-                    count += 1;
-                    if (count === Object.keys(routingTable).length) {
-                        process.exit();
-                    }
-                });
-            });
-        },
         'at': () => {
             logger.print('My address table: ');
             Object.keys(routingTable).forEach(a => {
@@ -500,7 +480,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 }
             }
 
-            logger.info("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
+            logger.info("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port);
 
             if (hopCount === MAX_HOP_COUNT) {
                 let data = {
