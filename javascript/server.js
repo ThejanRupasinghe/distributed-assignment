@@ -119,16 +119,16 @@ if (bsNode) {
 }
 
 
-// ============= Check the liveness by heartbeat request and fill the routing table up to 4 entries
+// ============= Check the liveliness by heartbeat request and fill the routing table up to 4 entries
 function heartBeatAndDiscover() {
     setInterval(() => {
         // send live request to all nodes
         Object.keys(routingTable).forEach(nodeKey => {
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
-                if(err !== null) {
+                if (err !== null) {
                     // This is failed
-                    logger.error(nodeKey, ' is dead');
+                    logger.error("Node :", nodeKey, 'is dead');
                     delete routingTable[nodeKey];  // remove from my routing table
 
                     // inform to bootstrap server
@@ -136,43 +136,21 @@ function heartBeatAndDiscover() {
                         ip: node.ip, port: node.port, name: nodeKey
                     });
                     tcp.init(bsNode.ip, bsNode.port, (error) => {
-                        console.log(error);
+                        logger.error(error);
                     });
                     tcp.sendMessage(unregMsg, (receivedMsg) => {
-                        logger.ok('Inform to Bootstrap server about the missing');
+                        logger.ok('Node : Inform to Bootstrap server about the missing');
                     })
                 } else {
-                    logger.ok(nodeKey, ' is LIVE')
+                    logger.ok("Node :", nodeKey, 'is LIVE')
                 }
             });
         });
 
         // check the routing table entry count and try to discover more
-        if (Object.keys(routingTable).length < 4 && Object.keys(routingTable).length > 0) {
-        if (Object.keys(routingTable).length < 4) {
+        if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
             // discover
-            logger.warning('Not enough nodes in routing table. try to discover');
-            let discSendNode = random.pickOne(routingTable);
-            udp.send(discSendNode, {type: msgParser.DESC, node: myNode}, (res) => {
-                // connect here
-                if (res.body.node.name === myNode.name) {
-                    logger.warning('Received my information as new node. No joining.')
-                } else {
-                    udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
-                        if (err === null) {
-                            let node = res1.body.node;
-                            if (res1.body.success) {
-                                routingTable[res.body.node.name] = node;
-                                logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
-                            } else {
-                                logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
-                            }
-                        }
-                    });
-                }
-            });
-        }
-    }, HEART_BEAT_TIME_OUT);
+            logger.warning('Node : Not enough nodes in routing table. try to discover');
             discover();
         }
     }, HEART_BEAT_TIME_OUT);
@@ -184,9 +162,10 @@ function heartBeatAndDiscover() {
 function discover() {
     let discSendNode = random.pickOne(routingTable);
 
-    if (discSendNode != null) {
-        udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
-            // connect here
+    udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
+        // connect here
+        // if the given one is not myNode or not in my routing table add
+        if (!((res.body.node.name in routingTable) || (res.body.node.name === myNode.name))) {
             udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
                 if (err === null) {
                     let node = res1.body.node;
@@ -198,12 +177,37 @@ function discover() {
                     }
                 }
             });
-        });
-    }
+        }
+    });
+
 }
 
 // TODO: implement shutdown gracefully and trigger hook
 function shutdown(error) {
+    if (error === 0) {
+        Object.keys(routingTable).forEach(nodeKey => {
+            let node = routingTable[nodeKey];
+            udp.send(node, {type: msgParser.LEAVE, node: myNode}, (res, err) => {
+                if (err !== null) {
+
+                    // TODO: leave_ok from every one and then unreg from BS
+
+                    // inform to bootstrap server
+                    let unregMsg = msgParser.generateUNREG({
+                        ip: node.ip, port: node.port, name: nodeKey
+                    });
+                    tcp.init(bsNode.ip, bsNode.port, (error) => {
+                        logger.error(error);
+                    });
+                    tcp.sendMessage(unregMsg, (receivedMsg) => {
+                        logger.ok('Inform to Bootstrap server about the missing');
+                    })
+                } else {
+                    logger.ok(nodeKey, ' is LIVE')
+                }
+            });
+        });
+    }
     process.exit(error);
 }
 
@@ -234,10 +238,10 @@ function udpStart() {
             case msgParser.LIVE:
                 res.send({type: msgParser.LIVE_OK, success: true});
                 break;
-            case msgParser.DESC:
+            case msgParser.DISC:
                 // pick a random node from my routing table and send
                 let pickedOne = random.pickOne(routingTable);
-                res.send({type: msgParser.DESC_OK, node: pickedOne, success: true});
+                res.send({type: msgParser.DISC_OK, node: pickedOne, success: true});
                 break;
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
@@ -291,7 +295,10 @@ function cliStart() {
             })
         },
         'name': () => {
-            logger.print(name);
+            logger.print(myNode.name);
+        },
+        'exit': () => {
+            shutdown(0);
         }
     });
 }

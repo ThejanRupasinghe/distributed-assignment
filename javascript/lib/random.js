@@ -1,13 +1,13 @@
 let genRanSet = (count, max) => {
     let arr = [];
-    if(count >= max) {
+    if (count >= max) {
         for (let i = 0; i < max; i++) {
             arr.push(i);
         }
     } else {
-        while(arr.length < count + 1){
-            let rand = Math.floor(Math.random()*max);
-            if(arr.indexOf(rand) > -1) continue;
+        while (arr.length < count + 1) {
+            let rand = Math.floor(Math.random() * max);
+            if (arr.indexOf(rand) > -1) continue;
             arr[arr.length] = rand;
         }
     }
@@ -29,6 +29,7 @@ module.exports.selectRandom = (count, obj) => {
 module.exports.pickOne = (obj) => {
     let keys = Object.keys(obj);
     let max = keys.length;
-    let rand = Math.floor(Math.random()*max);
+
+    let rand = Math.floor(Math.random() * max);
     return {...obj[keys[rand]], name: keys[rand]};
 };
