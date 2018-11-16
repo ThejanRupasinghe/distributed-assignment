@@ -123,7 +123,9 @@ if (bsNode) {
 function heartBeatAndDiscover() {
     setInterval(() => {
         // send live request to all nodes
+        let iterCount = 0;
         Object.keys(routingTable).forEach(nodeKey => {
+            iterCount++;
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
                 if (err !== null) {
@@ -165,7 +167,8 @@ function discover() {
     udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
         // connect here
         // if the given one is not myNode or not in my routing table add
-        if (!((res.body.node.name in routingTable) || (res.body.node.name === myNode.name))) {
+        if (res.body && !routingTable[res.body.node.name] && res.body.node.name !== myNode.name) {
+            // if (!((res.body.node.name in routingTable) || (res.body.node.name === myNode.name))) {
             udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
                 if (err === null) {
                     let node = res1.body.node;
