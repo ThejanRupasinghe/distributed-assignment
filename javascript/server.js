@@ -40,7 +40,7 @@ if (argv.bsIP && argv.bsPort) {
 }
 
 // print out taken information
-logger.print("=========== ", myNode.name, ' ==============');
+logger.ok("=========== ", myNode.name, ' ==============');
 logger.info("Node : Node Starting....");
 logger.info("Node : My Node : ", myNode);
 logger.info("Node : Bootstrap Server : ", bsNode);

@@ -1,4 +1,4 @@
-let FgRed = "\x1b[31m", FgYellow = "\x1b[33m", FgCyan = "\x1b[36m", Reset = "\x1b[0m", FgGreen = "\x1b[32m";
+let FgRed = "\x1b[31m", FgYellow = "\x1b[33m", FgCyan = "\x1b[36m", Reset = "\x1b[0m", FgGreen = "\x1b[32m", FgMagenta = "\x1b[35m";
 
 const active = {
     print: true,
@@ -6,6 +6,7 @@ const active = {
     warning: true,
     info: true,
     ok: true,
+    debug: false,
 };
 
 const methods = {
@@ -42,6 +43,13 @@ const methods = {
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
+    debug: (...str)=>{
+        if(active.debug){
+            str.unshift(FgMagenta);
+            str.push(Reset);
+            console.log.apply(console, Array.prototype.slice.call(str));
+        }
+    }
 };
 
 module.exports = methods;
