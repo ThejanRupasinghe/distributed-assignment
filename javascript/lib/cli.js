@@ -6,9 +6,6 @@ module.exports.init = (commands) => {
     commands.hi = () => {
         log.print('hi welcome you all to this little distributed system');
     };
-    commands.exit = () => {
-        process.exit();
-    };
     commands.cls = () => {
         console.log('\033[2J');
     };

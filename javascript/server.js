@@ -185,38 +185,58 @@ function discover() {
 
 }
 
-// TODO: implement shutdown gracefully and trigger hook
+/**
+ * Command function to shutdown
+ * @param error 0 - gracefully , 1 - error
+ */
 function shutdown(error) {
     if (error === 0) {
+        logger.warning("Node : Gracefully shutting down.....");
+        // TODO: stop discovery first
+
+        let leaveCount = 0;
+        let totalRoutingTableCount = Object.keys(routingTable).length;
+
+        if (totalRoutingTableCount === 0) {
+            logger.ok("Node : Leaving");
+            process.exit(0);
+        }
+
         Object.keys(routingTable).forEach(nodeKey => {
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LEAVE, node: myNode}, (res, err) => {
-                if (err !== null) {
+                if (err === null) {
 
-                    // TODO: leave_ok from every one and then unreg from BS
+                    leaveCount++;
 
+                    // LEAVE_OK from everyone and then UNREG
+                    if (leaveCount === totalRoutingTableCount) {
+                        // inform to bootstrap server
+                        let unregMsg = msgParser.generateUNREG({
+                            ip: myNode.ip, port: myNode.port, name: myNode.name
+                        });
+                        tcp.init(bsNode.ip, bsNode.port, (error) => {
+                            logger.error(error);
+                        });
+                        tcp.sendMessage(unregMsg, (receivedMsg) => {
+                            logger.ok("Node : Leaving");
+                            process.exit(error);
+                        });
+                    }
 
                 } else {
-                    logger.ok(nodeKey, ' is LIVE')
+                    logger.error(err);
                 }
             });
         });
-
-        // inform to bootstrap server
-        let unregMsg = msgParser.generateUNREG({
-            ip: node.ip, port: node.port, name: nodeKey
-        });
-        tcp.init(bsNode.ip, bsNode.port, (error) => {
-            logger.error(error);
-        });
-        tcp.sendMessage(unregMsg, (receivedMsg) => {
-            logger.ok('Inform to Bootstrap server about the missing');
-        })
+    } else {
+        process.exit(error);
     }
-
-    process.exit(error);
 }
 
+/**
+ * Server start - starts UDP listening and CLI
+ */
 function start() {
     udpStart();
     cliStart();
@@ -249,11 +269,16 @@ function udpStart() {
                 let pickedOne = random.pickOne(routingTable);
                 res.send({type: msgParser.DISC_OK, node: pickedOne, success: true});
                 break;
+            case msgParser.LEAVE:
+                delete routingTable[body.node.name];
+                logger.info("Node : Removed from routing table - " + body.node.ip + ":" + body.node.port);
+
+                res.send({type: msgParser.LEAVE_OK, success: true});
+                break;
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
             case 'send-msg-rel': // reliable
-
                 break;
             case 'con-graph':
                 require('./functions/con-graph').serverHandle(req, res, routingTable, name);
@@ -295,7 +320,7 @@ function cliStart() {
             });
         },
         'at': () => {
-            logger.print('your address table: ');
+            logger.print('My address table: ');
             Object.keys(routingTable).forEach(a => {
                 logger.print('\t', a, ": ", routingTable[a]);
             })
@@ -303,11 +328,11 @@ function cliStart() {
         'name': () => {
             logger.print(myNode.name);
         },
-        'search': (params)=>{
+        'search': (params) => {
             // search command = search "hello world"
-          let searchString = params['_'][1];
+            let searchString = params['_'][1];
 
-          search(searchString);
+            search(searchString);
         },
         'exit': () => {
             shutdown(0);

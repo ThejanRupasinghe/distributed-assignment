@@ -1,3 +1,6 @@
+const logger = require('./logger');
+
+// protocol
 const REG = "REG";
 const REG_OK = "REGOK";
 const ERROR = "ERROR";
@@ -14,6 +17,7 @@ const LIVE_OK = "LIVE_OK";
 const DISC = "DISC";
 const DISC_OK = "DISC_OK";
 
+// inside server
 const REQ = "REQ";
 const ACK = "ACK";
 const RES = "RES";
@@ -115,6 +119,12 @@ module.exports.generateUDPMsg = (msgSend) => {
             message += JOIN_OK + " 0";
         } else {
             message += JOIN_OK + " 9999";
+        }
+    } else if (LEAVE_OK === msgSend.body.type) {
+        if (msgSend.body.success) {
+            message += LEAVE_OK + " 0";
+        } else {
+            message += LEAVE_OK + " 9999";
         }
     } else if (LIVE === msgSend.body.type) {
         message += LIVE + ' 1';

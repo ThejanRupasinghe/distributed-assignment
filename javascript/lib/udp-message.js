@@ -14,8 +14,6 @@ module.exports.init = (port, cb) => {
     udpServer.bind(port);
 
     udpServer.on('message', (msgStream, rinfo) => {
-        // const udpStream = JSON.parse(msgStream.toString());       // parse the message
-
         logger.info("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
 
         const udpStream = msgParser.parseUDPMsg(msgStream.toString(), rinfo);
