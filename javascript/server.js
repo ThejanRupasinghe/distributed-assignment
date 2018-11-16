@@ -195,22 +195,25 @@ function shutdown(error) {
 
                     // TODO: leave_ok from every one and then unreg from BS
 
-                    // inform to bootstrap server
-                    let unregMsg = msgParser.generateUNREG({
-                        ip: node.ip, port: node.port, name: nodeKey
-                    });
-                    tcp.init(bsNode.ip, bsNode.port, (error) => {
-                        logger.error(error);
-                    });
-                    tcp.sendMessage(unregMsg, (receivedMsg) => {
-                        logger.ok('Inform to Bootstrap server about the missing');
-                    })
+
                 } else {
                     logger.ok(nodeKey, ' is LIVE')
                 }
             });
         });
+
+        // inform to bootstrap server
+        let unregMsg = msgParser.generateUNREG({
+            ip: node.ip, port: node.port, name: nodeKey
+        });
+        tcp.init(bsNode.ip, bsNode.port, (error) => {
+            logger.error(error);
+        });
+        tcp.sendMessage(unregMsg, (receivedMsg) => {
+            logger.ok('Inform to Bootstrap server about the missing');
+        })
     }
+
     process.exit(error);
 }
 
@@ -300,8 +303,26 @@ function cliStart() {
         'name': () => {
             logger.print(myNode.name);
         },
+        'search': (params)=>{
+            // search command = search "hello world"
+          let searchString = params['_'][1];
+
+          search(searchString);
+        },
         'exit': () => {
             shutdown(0);
         }
     });
+}
+
+/**
+ * Random walk search
+ * 1. Search inside logic
+ * 2. If not found pick random from routing table and send
+ *
+ * @param searchString wildcard enabled search string
+ */
+function search(searchString) {
+    //TODO: implement
+
 }
