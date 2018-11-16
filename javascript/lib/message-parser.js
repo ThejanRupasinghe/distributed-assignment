@@ -23,7 +23,7 @@ const ACK = "ACK";
 const RES = "RES";
 
 // TODO it is better we can export this by module.exports.CONSTS = {}
-module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DISC, DISC_OK, LEAVE, LEAVE_OK};
+module.exports = {REQ, ACK, RES, JOIN, JOIN_OK, LIVE, LIVE_OK, DISC, DISC_OK, LEAVE, LEAVE_OK, SER, SER_OK};
 
 // *************** FOR BOOTSTRAP SERVER ******************
 module.exports.generateREG = (node) => {
@@ -132,8 +132,10 @@ module.exports.generateUDPMsg = (msgSend) => {
         message += LIVE_OK + ' 1';
     } else if (DISC === msgSend.body.type) {
         message += DISC + ' 1';
-    } else if (DISC_OK) {
-        message += DISC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name
+    } else if (DISC_OK === msgSend.body.type) {
+        message += DISC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name;
+    } else if (SER === msgSend.body.type) {
+        message += SER + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " \"" + msgSend.body.searchString + "\" " + msgSend.body.hopCount;
     } else {
         message += JSON.stringify(msgSend.body);
     }
@@ -189,6 +191,11 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         udpStream.body.node.ip = msgReceiveArr[4];
         udpStream.body.node.port = msgReceiveArr[5];
         udpStream.body.node.name = msgReceiveArr[6];
+    } else if (SER === operation) {
+        udpStream.type=RES;
+        udpStream.body.node.ip = msgReceiveArr[3];
+        udpStream.body.node.port = msgReceiveArr[4];
+        //TODO: finish msg parsing = eg: "Lord of" split by space
     } else {
         logger.error('Message Parser : Unhandled UDP stream', udpStream);
     }

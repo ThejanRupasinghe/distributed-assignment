@@ -51,6 +51,8 @@ if (bsNode) {
     // initialize tcp connection to BS
     tcp.init(bsNode.ip, bsNode.port, (error) => {
         if (error != null) {
+            logger.error("Node : Error connecting to Bootstrap Server");
+            logger.error(error);
             shutdown(1);
         }
     });
@@ -59,6 +61,7 @@ if (bsNode) {
     let regMsg = msgParser.generateREG(myNode);
 
     tcp.sendMessage(regMsg, (receiveMsg) => {
+
         msgParser.parseREGOK(receiveMsg.toString(), (nodes, noOfNodes, error) => {
             if (nodes != null) {
                 if (noOfNodes === 0) {
@@ -97,29 +100,27 @@ if (bsNode) {
                 switch (error) {
                     case 9999:
                         logger.error("Node : Registration failed. Entry already in the table.");
-                        shutdown();
                         break;
                     case 9998:
                         logger.error("Node : Registration failed. Invalid IP, Port or Username.");
-                        shutdown();
                         break;
                     case 9997:
                         logger.error("Node : Registration failed. Bootstrap table is full.");
-                        shutdown();
                         break;
                     case "ERROR":
                         logger.error("Node : Invalid Registration Command.");
-                        shutdown();
                         break;
                 }
+                shutdown(1);
             }
         });
     });
 
 }
 
-
-// ============= Check the liveliness by heartbeat request and fill the routing table up to 4 entries
+/**
+ * Checks the liveliness by heartbeat request and fill the routing table up to 4 entries
+ */
 function heartBeatAndDiscover() {
     setInterval(() => {
         // send live request to all nodes
@@ -186,7 +187,7 @@ function discover() {
 }
 
 /**
- * Command function to shutdown
+ * Common function to shutdown
  * @param error 0 - gracefully , 1 - error
  */
 function shutdown(error) {
@@ -240,9 +241,12 @@ function shutdown(error) {
 function start() {
     udpStart();
     cliStart();
+    //TODO: add fileName picking
 }
 
-// message handler
+/**
+ * Starts UDP listener. Requests hit here. Each case to handle each type of request.
+ */
 function udpStart() {
     udp.init(myNode.port, (req, res) => {
         let body = req.body;
@@ -275,6 +279,8 @@ function udpStart() {
 
                 res.send({type: msgParser.LEAVE_OK, success: true});
                 break;
+            case msgParser.SER:
+                //TODO: complete
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
@@ -296,7 +302,9 @@ function udpStart() {
     });
 }
 
-// CLI
+/**
+ * Starts CLI.
+ */
 function cliStart() {
     cli.init({
         'send-msg': (params) => { // (target, msg, ttl) not reliable
@@ -340,14 +348,72 @@ function cliStart() {
     });
 }
 
+// TODO: randomly picked from FileNames.txt . Random size 2-10MB
+let files = {
+    "hello": {
+        "size": 5
+    },
+    "hello world": {
+        "size": 4
+    },
+    "world": {
+        "size": 3
+    }
+};
+
 /**
  * Random walk search
  * 1. Search inside logic
  * 2. If not found pick random from routing table and send
  *
- * @param searchString wildcard enabled search string
+ * @param searchString
  */
-function search(searchString) {
+function search(searchString, searchNode, hopCount) {
     //TODO: implement
 
+    let found = false;
+
+    searchString = searchString.toString().slice(1, -1);
+
+    let searchArr = searchString.split(" ");
+
+    //regex to only search full words
+    // let reg = new RegExp(".*" + searchString + ".*");
+    // name.match(reg)
+
+    Object.keys(files).forEach(name => {
+        let nameArr = name.split(" ");
+        let count = 0;
+        searchArr.forEach(searchWord => {
+            nameArr.forEach(nameWord => {
+                if (searchWord.toLowerCase() === nameWord.toLowerCase()) {
+                    count++;
+                }
+            })
+        });
+        if (count === searchArr.length) {
+            found = true;
+            console.log(name);
+        }
+    });
+
+    if (!found) {
+        //TODO: search msg passing goes here
+        if (Object.keys(routingTable).length > 0) {
+            let sendNode = random.pickOne(routingTable);
+
+            hopCount = hopCount + 1;
+
+            let data = {
+                "searchString": searchString,
+                "node": searchNode,
+                "hopCount": hopCount,
+                "type": msgParser.SER,
+            };
+
+            udp.send(sendNode, data, (res, err) => {
+                //TODO: complete
+            });
+        }
+    }
 }
