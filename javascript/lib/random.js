@@ -30,10 +30,6 @@ module.exports.pickOne = (obj) => {
     let keys = Object.keys(obj);
     let max = keys.length;
 
-    if (max === 0) {
-        return null;
-    }
-
     let rand = Math.floor(Math.random() * max);
     return {...obj[keys[rand]], name: keys[rand]};
 };
