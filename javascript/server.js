@@ -126,7 +126,7 @@ function heartBeatAndDiscover() {
         Object.keys(routingTable).forEach(nodeKey => {
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
-                if (err !== null) {
+                if(err !== null) {
                     // This is failed
                     logger.error(nodeKey, ' is dead');
                     delete routingTable[nodeKey];  // remove from my routing table
@@ -138,7 +138,7 @@ function heartBeatAndDiscover() {
                     tcp.init(bsNode.ip, bsNode.port, (error) => {
                         console.log(error);
                     });
-                    tcp.sendMessage(unregMsg, () => {
+                    tcp.sendMessage(unregMsg, (receivedMsg) => {
                         logger.ok('Inform to Bootstrap server about the missing');
                     })
                 } else {
@@ -149,6 +149,7 @@ function heartBeatAndDiscover() {
 
         // check the routing table entry count and try to discover more
         if (Object.keys(routingTable).length < 4 && Object.keys(routingTable).length > 0) {
+        if (Object.keys(routingTable).length < 4) {
             // discover
             logger.warning('Not enough nodes in routing table. try to discover');
             let discSendNode = random.pickOne(routingTable);
@@ -172,6 +173,33 @@ function heartBeatAndDiscover() {
             });
         }
     }, HEART_BEAT_TIME_OUT);
+            discover();
+        }
+    }, HEART_BEAT_TIME_OUT);
+}
+
+/**
+ * Does Node Discovery
+ */
+function discover() {
+    let discSendNode = random.pickOne(routingTable);
+
+    if (discSendNode != null) {
+        udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
+            // connect here
+            udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
+                if (err === null) {
+                    let node = res1.body.node;
+                    if (res1.body.success) {
+                        routingTable[res.body.node.name] = node;
+                        logger.info("Node : Added to routing table - " + node.ip + ":" + node.port);
+                    } else {
+                        logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
+                    }
+                }
+            });
+        });
+    }
 }
 
 // TODO: implement shutdown gracefully and trigger hook
