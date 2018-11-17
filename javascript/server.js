@@ -450,6 +450,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 type: msgParser.SER_OK,
                 hopCount: hopCount,
                 fileNames: resultFileNames,
+                node: myNode,
             };
 
             udp.send(searchNode, data, (res, err)=>{

@@ -136,6 +136,12 @@ module.exports.generateUDPMsg = (msgSend) => {
         message += DISC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name;
     } else if (SER === msgSend.body.type) {
         message += SER + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " \"" + msgSend.body.searchString + "\" " + msgSend.body.hopCount;
+    } else if (SER_OK === msgSend.body.type) {
+        let fileNames = msgSend.body.fileNames;
+        message += SER_OK + " " + fileNames.length + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " " + +msgSend.body.hopCount;
+        fileNames.forEach(name => {
+            message += " " + name;
+        });
     } else {
         message += JSON.stringify(msgSend.body);
     }
@@ -201,6 +207,17 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         }
         udpStream.body["searchString"] = searchString;
         udpStream.body["hopCount"] = msgReceiveArr[msgReceiveArr.length - 1];
+    } else if (SER_OK === operation) {
+        udpStream.type = RES;
+        let numberOfFiles = msgReceiveArr[3];
+        udpStream.body.node.ip = msgReceiveArr[4];
+        udpStream.body.node.port = msgReceiveArr[5];
+        udpStream.body["hopCount"] = msgReceiveArr[6];
+        let fileNames = [];
+        for (let i = 7; i < msgReceiveArr.length; i++) {
+            fileNames.push(msgReceiveArr[i].toString());
+        }
+        udpStream.body["fileNames"] = fileNames;
     } else {
         logger.error('Message Parser : Unhandled UDP stream', udpStream);
     }
