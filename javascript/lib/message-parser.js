@@ -220,7 +220,6 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
                 fileNames.push(tempArr[i].toString());
             }
         }
-        logger.debug(fileNames.length);
         udpStream.body["fileNames"] = fileNames;
     } else {
         logger.error('Message Parser : Unhandled UDP stream', udpStream);

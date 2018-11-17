@@ -300,11 +300,12 @@ function udpStart() {
                 //TODO: complete
                 search(body.searchString,
                     {ip: body.node.ip, port: body.node.port},
-                    body.hopCount,
+                    parseInt(body.hopCount),
                     {ip: req.rinfo.address, port: req.rinfo.port});
                 break;
 
             case msgParser.SER_OK:
+                //TODO: complete
                 logger.debug("Node: Search Results\n--------------");
                 logger.debug("From - " + body.node.ip + ":" + body.node.port);
                 logger.debug("Files - " + body.fileNames);
@@ -427,7 +428,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
     }
 
     if (!found) {
-        //TODO: search msg passing goes here
+        // search message passing - SER
         if (Object.keys(routingTable).length > 0) {
             let nextNode = random.pickOne(routingTable);
 
@@ -464,8 +465,9 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 node: myNode,
             };
 
+            // send search results - SEROK
             udp.send(searchNode, data, (res, err) => {
-
+                //TODO: complete
             });
         }
     }
