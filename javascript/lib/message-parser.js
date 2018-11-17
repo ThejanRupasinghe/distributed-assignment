@@ -192,10 +192,15 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         udpStream.body.node.port = msgReceiveArr[5];
         udpStream.body.node.name = msgReceiveArr[6];
     } else if (SER === operation) {
-        udpStream.type=RES;
+        udpStream.type = REQ;
         udpStream.body.node.ip = msgReceiveArr[3];
         udpStream.body.node.port = msgReceiveArr[4];
-        //TODO: finish msg parsing = eg: "Lord of" split by space
+        let searchString = "";
+        for (let i = 5; i < msgReceiveArr.length - 1; i++) {
+            searchString += msgReceiveArr[i].toString();
+        }
+        udpStream.body["searchString"] = searchString;
+        udpStream.body["hopCount"] = msgReceiveArr[msgReceiveArr.length - 1];
     } else {
         logger.error('Message Parser : Unhandled UDP stream', udpStream);
     }

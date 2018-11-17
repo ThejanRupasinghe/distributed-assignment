@@ -6,7 +6,8 @@ const active = {
     warning: true,
     info: true,
     ok: true,
-    debug: false,
+    wire: true,
+    debug: true,
 };
 
 const methods = {
@@ -39,6 +40,13 @@ const methods = {
     ok: (...str) => {
         if(active.ok) {
             str.unshift(FgGreen);
+            str.push(Reset);
+            console.log.apply(console, Array.prototype.slice.call(str));
+        }
+    },
+    wire: (...str)=>{
+        if(active.wire){
+            str.unshift(FgMagenta);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }

@@ -14,7 +14,7 @@ module.exports.init = (port, cb) => {
     udpServer.bind(port);
 
     udpServer.on('message', (msgStream, rinfo) => {
-        logger.debug("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
+        logger.wire("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
 
         const udpStream = msgParser.parseUDPMsg(msgStream.toString(), rinfo);
 
@@ -24,7 +24,7 @@ module.exports.init = (port, cb) => {
             // send ACK
             const ack = msgParser.generateUDPMsg({body: {type: msgParser.ACK, ok: 1}, id: udpStream.id}); // create the acknowledgement
             udpServer.send(ack, 0, ack.length, rinfo.port, rinfo.address);     // send ack
-            logger.debug("UDP : Sent - " + ack + " - " + rinfo.address + ":" + rinfo.port);
+            logger.wire("UDP : Sent - " + ack + " - " + rinfo.address + ":" + rinfo.port);
 
             const request = {  // create request object
                 body: udpStream.body,
@@ -41,7 +41,7 @@ module.exports.init = (port, cb) => {
                     });
                     // send the results TODO add ack if necessary (then the version will be added)
                     udpServer.send(resString, 0, resString.length, rinfo.port, rinfo.address);
-                    logger.debug("UDP : Sent - " + resString + " - " + rinfo.address + ":" + rinfo.port);
+                    logger.wire("UDP : Sent - " + resString + " - " + rinfo.address + ":" + rinfo.port);
                 }
             };
 
@@ -100,7 +100,7 @@ module.exports.send = (target, data, cb) => {
             }, 500);
         });
 
-        logger.debug("UDP : Sent - " + msg_send + " - " + target.ip + ":" + target.port);
+        logger.wire("UDP : Sent - " + msg_send + " - " + target.ip + ":" + target.port);
     };
 
     // put an interval to send the message until get an acknowledgement
