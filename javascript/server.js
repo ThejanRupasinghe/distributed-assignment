@@ -6,6 +6,7 @@ const tcp = require('./lib/tcp-message');
 const udp = require('./lib/udp-message');
 const ipLib = require('ip');
 const msgParser = require('./lib/message-parser');
+const searchAlgo = require('./lib/search_algo');
 
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
 
@@ -393,22 +394,33 @@ function search(searchString, searchNode, hopCount, requestNode) {
     // let reg = new RegExp(".*" + searchString + ".*");
     // name.match(reg)
 
-    Object.keys(files).forEach(name => {
-        name = name.toLowerCase();
-        let nameArr = name.split(" ");
-        let count = 0;
-        searchArr.forEach(searchWord => {
-            nameArr.forEach(nameWord => {
-                if (searchWord === nameWord) {
-                    count++;
-                }
-            })
+    // Object.keys(files).forEach(name => {
+    //     name = name.toLowerCase();
+    //     let nameArr = name.split(" ");
+    //     let count = 0;
+    //     searchArr.forEach(searchWord => {
+    //         nameArr.forEach(nameWord => {
+    //             if (searchWord === nameWord) {
+    //                 count++;
+    //             }
+    //         })
+    //     });
+    //     if (count === searchArr.length) {
+    //         found = true;
+    //         console.log(name);
+    //     }
+    // });
+
+    //returns an array
+    let search_result = searchAlgo.search(searchString);
+    if(search_result.length==0){
+        found=false;
+    }else{
+        found=true;
+        search_result.forEach(element => {
+            console.log(element);
         });
-        if (count === searchArr.length) {
-            found = true;
-            console.log(name);
-        }
-    });
+    }
 
     if (!found) {
         //TODO: search msg passing goes here
