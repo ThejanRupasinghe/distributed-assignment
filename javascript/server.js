@@ -6,8 +6,14 @@ const tcp = require('./lib/tcp-message');
 const udp = require('./lib/udp-message');
 const ipLib = require('ip');
 const msgParser = require('./lib/message-parser');
+const fileController = require('./lib/file-controller');
+const MusicFile = require('./lib/music-file');
 
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
+const MAX_FILES_PER_NODE = 5;
+const MIN_FILES_PER_NODE = 3;
+const MAX_FILE_SIZE = 10;
+const MIN_FILE_SIZE = 2;
 
 // stores local ip and default port, later adds name
 let myNode = {
@@ -242,7 +248,7 @@ function shutdown(error) {
 function start() {
     udpStart();
     cliStart();
-    //TODO: add fileName picking
+    pickFiles();
 }
 
 /**
@@ -291,7 +297,7 @@ function udpStart() {
                     {ip: body.node.ip, port: body.node.port},
                     body.hopCount,
                     {ip: req.rinfo.address, port: req.rinfo.port});
-
+            // break; // ??
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
@@ -359,18 +365,19 @@ function cliStart() {
     });
 }
 
-// TODO: randomly picked from FileNames.txt . Random size 2-10MB
-let files = {
-    "hell": {
-        "size": 5
-    },
-    "hello world": {
-        "size": 4
-    },
-    "world": {
-        "size": 3
-    }
-};
+let files = []; // to store music files for the node
+
+function pickFiles() {
+    let randomFileCount = random.getRandomIntFromInterval(MIN_FILES_PER_NODE, MAX_FILES_PER_NODE);
+    let randomSetOfFileNames = random.selectRandom(randomFileCount - 1, fileController.fileNames);
+
+    Object.keys(randomSetOfFileNames).forEach(function (key) {
+        let randomFileSize = random.getRandomIntFromInterval(MIN_FILE_SIZE, MAX_FILE_SIZE);
+        let musicFile = new MusicFile.MusicFile(randomSetOfFileNames[key], randomFileSize);
+        files.push(musicFile);
+    });
+}
+
 
 /**
  * Random walk search
@@ -453,7 +460,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 node: myNode,
             };
 
-            udp.send(searchNode, data, (res, err)=>{
+            udp.send(searchNode, data, (res, err) => {
 
             });
         }
