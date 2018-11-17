@@ -6,12 +6,10 @@ const tcp = require('./lib/tcp-message');
 const udp = require('./lib/udp-message');
 const ipLib = require('ip');
 const msgParser = require('./lib/message-parser');
-<<<<<<< HEAD
 const searchAlgo = require('./lib/search_algo');
-=======
 const fileController = require('./lib/file-controller');
 const MusicFile = require('./lib/music-file');
->>>>>>> 61d0ad5ee1eeb6c475e0cf5d95450cbb1d1e64d7
+
 
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
 const MAX_FILES_PER_NODE = 5;
