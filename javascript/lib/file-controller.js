@@ -51,6 +51,6 @@ module.exports = {
 
 
 // Testing the functions in this file
-let randomData = generateRandomData(8);
-let hash = calcHash(randomData);
-console.log(hash);
+// let randomData = generateRandomData(8);
+// let hash = calcHash(randomData);
+// console.log(hash);

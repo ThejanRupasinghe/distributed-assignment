@@ -10,7 +10,7 @@ const searchAlgo = require('./lib/search_algo');
 const fileController = require('./lib/file-controller');
 const MusicFile = require('./lib/music-file');
 
-
+// server constants
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
 const MAX_FILES_PER_NODE = 5;
 const MIN_FILES_PER_NODE = 3;
@@ -23,6 +23,9 @@ let myNode = {
     port: 4000,
     name: 'node_' + ipLib.address()
 };
+
+// to store music files for the node
+let files = {};
 
 // routing table
 const routingTable = {};
@@ -153,7 +156,7 @@ function heartBeatAndDiscover() {
                         logger.ok('Node: Inform Bootstrap server about the missing node');
                     })
                 } else {
-                    logger.ok("Node:", nodeKey, 'is LIVE')
+                    logger.hb("Node:", nodeKey, 'is LIVE')
                 }
             });
         });
@@ -162,7 +165,7 @@ function heartBeatAndDiscover() {
         // check the routing table entry count and try to discover more
         if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
             // discover
-            logger.warning('Node: Not enough nodes in routing table. try to discover');
+            logger.hb('Node: Not enough nodes in routing table. try to discover');
             discover();
         }
     }, HEART_BEAT_TIME_OUT);
@@ -245,7 +248,7 @@ function shutdown(error) {
 }
 
 /**
- * Server start - starts UDP listening and CLI
+ * Server start - starts UDP listening, CLI and picks files
  */
 function start() {
     udpStart();
@@ -299,7 +302,8 @@ function udpStart() {
                     {ip: body.node.ip, port: body.node.port},
                     body.hopCount,
                     {ip: req.rinfo.address, port: req.rinfo.port});
-            // break; // ??
+                break;
+
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
@@ -361,22 +365,29 @@ function cliStart() {
 
             search(searchString, myNode, 0, null);
         },
+        'files': () => {
+          logger.print(files);
+        },
         'exit': () => {
             shutdown(0);
         }
     });
 }
 
-let files = []; // to store music files for the node
-
+/**
+ * 1. Picks random file count from 3-5 and selects random file names of that count
+ * 2. Iterate through picked file names and adds objects of random size 2-10 to files
+ */
 function pickFiles() {
     let randomFileCount = random.getRandomIntFromInterval(MIN_FILES_PER_NODE, MAX_FILES_PER_NODE);
     let randomSetOfFileNames = random.selectRandom(randomFileCount - 1, fileController.fileNames);
 
-    Object.keys(randomSetOfFileNames).forEach(function (key) {
+    Object.keys(randomSetOfFileNames).forEach((key) => {
+        //TODO: Project description says "generate random size on file request". Keep this.
         let randomFileSize = random.getRandomIntFromInterval(MIN_FILE_SIZE, MAX_FILE_SIZE);
-        let musicFile = new MusicFile.MusicFile(randomSetOfFileNames[key], randomFileSize);
-        files.push(musicFile);
+        // let musicFile = new MusicFile.MusicFile(randomSetOfFileNames[key], randomFileSize);
+        // files.push(musicFile);
+        files[randomSetOfFileNames[key]] = {size: randomFileSize};
     });
 }
 
@@ -398,43 +409,15 @@ function search(searchString, searchNode, hopCount, requestNode) {
     let found = false;
 
     searchString = searchString.toString().slice(1, -1);
-    searchString = searchString.toLowerCase();
 
-    let searchArr = searchString.split(" ");
-
-    //regex to only search full words
-    // let reg = new RegExp(".*" + searchString + ".*");
-    // name.match(reg)
-
-
-    // Object.keys(files).forEach(name => {
-    //     name = name.toLowerCase();
-    //     let nameArr = name.split(" ");
-    //     let count = 0;
-    //     searchArr.forEach(searchWord => {
-    //         nameArr.forEach(nameWord => {
-    //             if (searchWord === nameWord) {
-    //                 count++;
-    //             }
-    //         })
-    //     });
-    //     if (count === searchArr.length) {
-    //         found = true;
-    //         console.log(name);
-    //     }
-    // });
+    let fileNames = Object.keys(files);
 
     //returns an array
-    let search_result = searchAlgo.search(searchString);
-    if(search_result.length==0){
-        found=false;
-    }else{
-        found=true;
-        search_result.forEach(element => {
-            console.log(element);
-        });
+    let resultFileNames = searchAlgo.search(searchString, fileNames);
+    if (resultFileNames.length !== 0) {
+        found = true;
+        logger.debug("Node: Search Results - " + resultFileNames);
     }
-
 
     if (!found) {
         //TODO: search msg passing goes here

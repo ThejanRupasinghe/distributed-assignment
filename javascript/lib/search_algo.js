@@ -2,13 +2,27 @@ const fs = require('fs');
 
 //search for available files - available files are in ./resources/files.txt
 //todo: eliminate the redundancy of creating this map again and again
-module.exports.search = (search_string) => {
+
+/**
+ * Search for a query in given file names
+ *
+ * @param search_string search string to search
+ * @param file_array array of file names
+ * @returns {Array} includes result file names
+ */
+module.exports.search = (search_string, file_array) => {
 
     //to keep each word in search string
     let word_array = search_string.toLowerCase().split(" ");
 
+    /* Commenting all file operations - file_array is passed to function
     //to keep the available files
     let file_array = [];
+    //to identify available files in the node
+    let txtFile = "./resources/files.txt";
+    let file = fs.readFileSync(txtFile, 'utf8');
+    file_array = file.split("\n");
+    */
 
     //each word is mapped to a file (key = <individiual word>, value = <filename>)
     let word_file_map = {};
@@ -16,15 +30,10 @@ module.exports.search = (search_string) => {
     //search results are stored in here
     let result_array = [];
 
-    //to identify available files in the node
-    let txtFile = "./resources/files.txt";
-    let file = fs.readFileSync(txtFile, 'utf8');
-    file_array = file.split("\n");
-
     //each filename is mapped (key = individual term, value = filename) -- multivalue supported
     file_array.forEach(line => {
         let line_word_array = line.toLowerCase().split(" ");
-        for (i = 0; i < line_word_array.length; i++) {
+        for (let i = 0; i < line_word_array.length; i++) {
             if (!word_file_map.hasOwnProperty(line_word_array[i])) {
                 //if the individual term is not in map as a key -> add
                 word_file_map[line_word_array[i]] = line;
@@ -36,7 +45,7 @@ module.exports.search = (search_string) => {
     });
 
     //iterate through the word array
-    for (j = 0; j < word_array.length; j++) {
+    for (let j = 0; j < word_array.length; j++) {
 
         //if the individual key is in the map search for it, otherwise return null
         if (word_file_map.hasOwnProperty(word_array[j])) {
@@ -53,7 +62,7 @@ module.exports.search = (search_string) => {
 
                 //if a term is in results array but not in temp result => remove them
                 temp_result.forEach(element => {
-                    for (k = 0; k < result_array.length; k++) {
+                    for (let k = 0; k < result_array.length; k++) {
                         if (result_array[k] !== element) {
                             result_array.splice(k, 1);
                         }
