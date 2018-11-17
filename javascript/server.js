@@ -377,7 +377,11 @@ let files = {
  * 1. Search inside logic
  * 2. If not found pick random from routing table and send
  *
- * @param searchString
+ * @param searchString: search string covered with quotation marks - "Lord of"
+ * @param searchNode: node that originates the search query
+ * @param hopCount: current hop count - increased by 1 inside the method
+ * @param requestNode: node which requested this search from my node
+ *
  */
 function search(searchString, searchNode, hopCount, requestNode) {
     //TODO: implement
@@ -393,6 +397,8 @@ function search(searchString, searchNode, hopCount, requestNode) {
     // let reg = new RegExp(".*" + searchString + ".*");
     // name.match(reg)
 
+    let resultFileNames = [];
+
     Object.keys(files).forEach(name => {
         name = name.toLowerCase();
         let nameArr = name.split(" ");
@@ -407,6 +413,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
         if (count === searchArr.length) {
             found = true;
             console.log(name);
+            resultFileNames.push(name);
         }
     });
 
@@ -414,6 +421,10 @@ function search(searchString, searchNode, hopCount, requestNode) {
         //TODO: search msg passing goes here
         if (Object.keys(routingTable).length > 1) {
             let nextNode = random.pickOne(routingTable);
+
+            while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
+                nextNode = random.pickOne(routingTable);
+            }
 
             logger.debug("Node: Picked Search Node - " + nextNode);
 
@@ -428,6 +439,21 @@ function search(searchString, searchNode, hopCount, requestNode) {
 
             udp.send(nextNode, data, (res, err) => {
                 //TODO: complete
+            });
+        }
+    } else {
+        // file is found in the search query originating node
+        if (requestNode === null) {
+
+        } else {
+            let data = {
+                type: msgParser.SER_OK,
+                hopCount: hopCount,
+                fileNames: resultFileNames,
+            };
+
+            udp.send(searchNode, data, (res, err)=>{
+
             });
         }
     }
