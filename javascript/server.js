@@ -304,6 +304,13 @@ function udpStart() {
                     {ip: req.rinfo.address, port: req.rinfo.port});
                 break;
 
+            case msgParser.SER_OK:
+                logger.debug("Node: Search Results\n--------------");
+                logger.debug("From - " + body.node.ip + ":" + body.node.port);
+                logger.debug("Files - " + body.fileNames);
+                logger.debug("Hop Count - " + body.hopCount + "\n---------------");
+                break;
+
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
@@ -366,7 +373,7 @@ function cliStart() {
             search(searchString, myNode, 0, null);
         },
         'files': () => {
-          logger.print(files);
+            logger.print(files);
         },
         'exit': () => {
             shutdown(0);
@@ -421,14 +428,16 @@ function search(searchString, searchNode, hopCount, requestNode) {
 
     if (!found) {
         //TODO: search msg passing goes here
-        if (Object.keys(routingTable).length > 1) {
+        if (Object.keys(routingTable).length > 0) {
             let nextNode = random.pickOne(routingTable);
 
-            while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
-                nextNode = random.pickOne(routingTable);
+            if (requestNode !== null) {
+                while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
+                    nextNode = random.pickOne(routingTable);
+                }
             }
 
-            logger.debug("Node: Picked Search Node - " + nextNode);
+            logger.debug("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
 
             hopCount = hopCount + 1;
 
