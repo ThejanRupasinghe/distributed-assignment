@@ -150,6 +150,7 @@ function heartBeatAndDiscover() {
             });
         });
 
+        //TODO: discover only if LIVE
         // check the routing table entry count and try to discover more
         if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
             // discover
@@ -256,6 +257,7 @@ function udpStart() {
                 break;
             case 'pong':
                 break;
+
             case msgParser.JOIN: // name, address
                 routingTable[body.node.name] = {
                     ip: body.node.ip,
@@ -265,22 +267,31 @@ function udpStart() {
                 // TODO: can handle routing table exceeding - success: false
                 res.send({type: msgParser.JOIN_OK, success: true});
                 break;
+
             case msgParser.LIVE:
                 res.send({type: msgParser.LIVE_OK, success: true});
                 break;
+
             case msgParser.DISC:
                 // pick a random node from my routing table and send
                 let pickedOne = random.pickOne(routingTable);
                 res.send({type: msgParser.DISC_OK, node: pickedOne, success: true});
                 break;
+
             case msgParser.LEAVE:
                 delete routingTable[body.node.name];
                 logger.info("Node: Removed from routing table - " + body.node.ip + ":" + body.node.port);
 
                 res.send({type: msgParser.LEAVE_OK, success: true});
                 break;
+
             case msgParser.SER:
-            //TODO: complete
+                //TODO: complete
+                search(body.searchString,
+                    {ip: body.node.ip, port: body.node.port},
+                    body.hopCount,
+                    {ip: req.rinfo.address, port: req.rinfo.port});
+
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
@@ -340,7 +351,7 @@ function cliStart() {
             // search command = search "hello world"
             let searchString = params['_'][1];
 
-            search(searchString);
+            search(searchString, myNode, 0, null);
         },
         'exit': () => {
             shutdown(0);
@@ -350,7 +361,7 @@ function cliStart() {
 
 // TODO: randomly picked from FileNames.txt . Random size 2-10MB
 let files = {
-    "hello": {
+    "hell": {
         "size": 5
     },
     "hello world": {
@@ -368,12 +379,13 @@ let files = {
  *
  * @param searchString
  */
-function search(searchString, searchNode, hopCount) {
+function search(searchString, searchNode, hopCount, requestNode) {
     //TODO: implement
 
     let found = false;
 
     searchString = searchString.toString().slice(1, -1);
+    searchString = searchString.toLowerCase();
 
     let searchArr = searchString.split(" ");
 
@@ -382,11 +394,12 @@ function search(searchString, searchNode, hopCount) {
     // name.match(reg)
 
     Object.keys(files).forEach(name => {
+        name = name.toLowerCase();
         let nameArr = name.split(" ");
         let count = 0;
         searchArr.forEach(searchWord => {
             nameArr.forEach(nameWord => {
-                if (searchWord.toLowerCase() === nameWord.toLowerCase()) {
+                if (searchWord === nameWord) {
                     count++;
                 }
             })
@@ -399,19 +412,21 @@ function search(searchString, searchNode, hopCount) {
 
     if (!found) {
         //TODO: search msg passing goes here
-        if (Object.keys(routingTable).length > 0) {
-            let sendNode = random.pickOne(routingTable);
+        if (Object.keys(routingTable).length > 1) {
+            let nextNode = random.pickOne(routingTable);
+
+            logger.debug("Node: Picked Search Node - " + nextNode);
 
             hopCount = hopCount + 1;
 
             let data = {
-                "searchString": searchString,
-                "node": searchNode,
-                "hopCount": hopCount,
-                "type": msgParser.SER,
+                searchString: searchString,
+                node: searchNode,
+                hopCount: hopCount,
+                type: msgParser.SER,
             };
 
-            udp.send(sendNode, data, (res, err) => {
+            udp.send(nextNode, data, (res, err) => {
                 //TODO: complete
             });
         }
