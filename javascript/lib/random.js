@@ -1,4 +1,4 @@
-let genRanSet = (count, max) => {
+let getRandomSet = (count, max) => {
     let arr = [];
     if (count >= max) {
         for (let i = 0; i < max; i++) {
@@ -14,22 +14,34 @@ let genRanSet = (count, max) => {
     return arr;
 };
 
-module.exports.getRandomSet = genRanSet;
+let getRandomIntFromInterval = (min, max) => {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+};
 
-module.exports.selectRandom = (count, obj) => {
+
+let selectRandom = (count, obj) => {
     let keys = Object.keys(obj);
     let max = keys.length;
     let newObj = {};
-    genRanSet(count, max).forEach(i => {
+    getRandomSet(count, max).forEach(i => {
         newObj[keys[i]] = obj[keys[i]];
     });
     return newObj;
 };
 
-module.exports.pickOne = (obj) => {
+
+let pickOne = (obj) => {
     let keys = Object.keys(obj);
     let max = keys.length;
 
     let rand = Math.floor(Math.random() * max);
     return {...obj[keys[rand]], name: keys[rand]};
 };
+
+module.exports = {
+    pickOne,
+    selectRandom,
+    getRandomSet,
+    getRandomIntFromInterval
+};
+

@@ -1,4 +1,10 @@
-let FgRed = "\x1b[31m", FgYellow = "\x1b[33m", FgCyan = "\x1b[36m", Reset = "\x1b[0m", FgGreen = "\x1b[32m", FgMagenta = "\x1b[35m";
+let FgRed = "\x1b[31m",
+    FgYellow = "\x1b[33m",
+    FgCyan = "\x1b[36m",
+    Reset = "\x1b[0m",
+    FgGreen = "\x1b[32m",
+    FgMagenta = "\x1b[35m",
+    FgWhite = "\x1b[37m";
 
 const active = {
     print: true,
@@ -53,7 +59,7 @@ const methods = {
     },
     debug: (...str)=>{
         if(active.debug){
-            str.unshift(FgMagenta);
+            str.unshift(FgWhite);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }

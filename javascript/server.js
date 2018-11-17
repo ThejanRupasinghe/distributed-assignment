@@ -6,9 +6,18 @@ const tcp = require('./lib/tcp-message');
 const udp = require('./lib/udp-message');
 const ipLib = require('ip');
 const msgParser = require('./lib/message-parser');
+<<<<<<< HEAD
 const searchAlgo = require('./lib/search_algo');
+=======
+const fileController = require('./lib/file-controller');
+const MusicFile = require('./lib/music-file');
+>>>>>>> 61d0ad5ee1eeb6c475e0cf5d95450cbb1d1e64d7
 
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
+const MAX_FILES_PER_NODE = 5;
+const MIN_FILES_PER_NODE = 3;
+const MAX_FILE_SIZE = 10;
+const MIN_FILE_SIZE = 2;
 
 // stores local ip and default port, later adds name
 let myNode = {
@@ -243,7 +252,7 @@ function shutdown(error) {
 function start() {
     udpStart();
     cliStart();
-    //TODO: add fileName picking
+    pickFiles();
 }
 
 /**
@@ -292,7 +301,7 @@ function udpStart() {
                     {ip: body.node.ip, port: body.node.port},
                     body.hopCount,
                     {ip: req.rinfo.address, port: req.rinfo.port});
-
+            // break; // ??
             case 'send-msg': // not reliable
                 require('./functions/send-msg').serverHandle(req, res, routingTable, name);
                 break;
@@ -360,25 +369,30 @@ function cliStart() {
     });
 }
 
-// TODO: randomly picked from FileNames.txt . Random size 2-10MB
-let files = {
-    "hell": {
-        "size": 5
-    },
-    "hello world": {
-        "size": 4
-    },
-    "world": {
-        "size": 3
-    }
-};
+let files = []; // to store music files for the node
+
+function pickFiles() {
+    let randomFileCount = random.getRandomIntFromInterval(MIN_FILES_PER_NODE, MAX_FILES_PER_NODE);
+    let randomSetOfFileNames = random.selectRandom(randomFileCount - 1, fileController.fileNames);
+
+    Object.keys(randomSetOfFileNames).forEach(function (key) {
+        let randomFileSize = random.getRandomIntFromInterval(MIN_FILE_SIZE, MAX_FILE_SIZE);
+        let musicFile = new MusicFile.MusicFile(randomSetOfFileNames[key], randomFileSize);
+        files.push(musicFile);
+    });
+}
+
 
 /**
  * Random walk search
  * 1. Search inside logic
  * 2. If not found pick random from routing table and send
  *
- * @param searchString
+ * @param searchString: search string covered with quotation marks - "Lord of"
+ * @param searchNode: node that originates the search query
+ * @param hopCount: current hop count - increased by 1 inside the method
+ * @param requestNode: node which requested this search from my node
+ *
  */
 function search(searchString, searchNode, hopCount, requestNode) {
     //TODO: implement
@@ -393,6 +407,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
     //regex to only search full words
     // let reg = new RegExp(".*" + searchString + ".*");
     // name.match(reg)
+
 
     // Object.keys(files).forEach(name => {
     //     name = name.toLowerCase();
@@ -422,10 +437,15 @@ function search(searchString, searchNode, hopCount, requestNode) {
         });
     }
 
+
     if (!found) {
         //TODO: search msg passing goes here
         if (Object.keys(routingTable).length > 1) {
             let nextNode = random.pickOne(routingTable);
+
+            while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
+                nextNode = random.pickOne(routingTable);
+            }
 
             logger.debug("Node: Picked Search Node - " + nextNode);
 
@@ -440,6 +460,22 @@ function search(searchString, searchNode, hopCount, requestNode) {
 
             udp.send(nextNode, data, (res, err) => {
                 //TODO: complete
+            });
+        }
+    } else {
+        // file is found in the search query originating node
+        if (requestNode === null) {
+
+        } else {
+            let data = {
+                type: msgParser.SER_OK,
+                hopCount: hopCount,
+                fileNames: resultFileNames,
+                node: myNode,
+            };
+
+            udp.send(searchNode, data, (res, err) => {
+
             });
         }
     }
