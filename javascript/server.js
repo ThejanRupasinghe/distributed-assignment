@@ -264,11 +264,6 @@ function udpStart() {
         let body = req.body;
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
-            case 'ping':
-                break;
-            case 'pong':
-                break;
-
             case msgParser.JOIN: // name, address
                 routingTable[body.node.name] = {
                     ip: body.node.ip,
@@ -311,15 +306,6 @@ function udpStart() {
                 logger.debug("Files - " + body.fileNames);
                 logger.debug("Hop Count - " + body.hopCount + "\n---------------");
                 break;
-
-            case 'send-msg': // not reliable
-                require('./functions/send-msg').serverHandle(req, res, routingTable, name);
-                break;
-            case 'send-msg-rel': // reliable
-                break;
-            case 'con-graph':
-                require('./functions/con-graph').serverHandle(req, res, routingTable, name);
-                break;
             case 'delete':
                 if (routingTable[msg.name]) {
                     delete routingTable[msg.name];
@@ -338,15 +324,6 @@ function udpStart() {
  */
 function cliStart() {
     cli.init({
-        'send-msg': (params) => { // (target, msg, ttl) not reliable
-            require('./functions/send-msg').cli(params, routingTable, myNode.name);
-        },
-        'send-msg-rel': (params) => { // reliable (target, msg, ttl)
-
-        },
-        'con-graph': (params) => { // ttl,
-            require('./functions/con-graph').cli(params, routingTable)
-        },
         'delete': () => {
             let count = 0;
             Object.keys(routingTable).forEach(k => {
