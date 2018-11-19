@@ -129,6 +129,7 @@ function heartBeatAndDiscover() {
             iterCount++;
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
+                iterCount++;
                 if (err !== null) {
                     // This node has failed
                     logger.error("Node:", nodeKey, 'is dead');
@@ -150,12 +151,13 @@ function heartBeatAndDiscover() {
             });
         });
 
-        //TODO: discover only if LIVE
-        // check the routing table entry count and try to discover more
-        if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
-            // discover
-            logger.warning('Node: Not enough nodes in routing table. try to discover');
-            discover();
+        if(iterCount === Object.keys(routingTable).length) {
+            // check the routing table entry count and try to discover more
+            if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
+                // discover
+                logger.warning('Node : Not enough nodes in routing table. try to discover');
+                discover();
+            }
         }
     }, HEART_BEAT_TIME_OUT);
 }
@@ -253,11 +255,6 @@ function udpStart() {
         let body = req.body;
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
-            case 'ping':
-                break;
-            case 'pong':
-                break;
-
             case msgParser.JOIN: // name, address
                 routingTable[body.node.name] = {
                     ip: body.node.ip,
@@ -291,14 +288,6 @@ function udpStart() {
                     {ip: body.node.ip, port: body.node.port},
                     body.hopCount,
                     {ip: req.rinfo.address, port: req.rinfo.port});
-
-            case 'send-msg': // not reliable
-                require('./functions/send-msg').serverHandle(req, res, routingTable, name);
-                break;
-            case 'send-msg-rel': // reliable
-                break;
-            case 'con-graph':
-                require('./functions/con-graph').serverHandle(req, res, routingTable, name);
                 break;
             case 'delete':
                 if (routingTable[msg.name]) {
@@ -318,15 +307,6 @@ function udpStart() {
  */
 function cliStart() {
     cli.init({
-        'send-msg': (params) => { // (target, msg, ttl) not reliable
-            require('./functions/send-msg').cli(params, routingTable, myNode.name);
-        },
-        'send-msg-rel': (params) => { // reliable (target, msg, ttl)
-
-        },
-        'con-graph': (params) => { // ttl,
-            require('./functions/con-graph').cli(params, routingTable)
-        },
         'delete': () => {
             let count = 0;
             Object.keys(routingTable).forEach(k => {

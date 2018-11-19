@@ -14,12 +14,12 @@ gnome-terminal --working-directory=${DIR}/javascript/ \
 sleep 6
 gnome-terminal --working-directory=${DIR}/javascript/ \
         --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_001 --port=4010'
-#sleep 6
-#gnome-terminal --working-directory=${DIR}/javascript/ \
-#        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_002 --port=4020'
-#sleep 6
-#gnome-terminal --working-directory=${DIR}/javascript/ \
-#        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_003 --port=4030'
+sleep 6
+gnome-terminal --working-directory=${DIR}/javascript/ \
+        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_002 --port=4020'
+sleep 6
+gnome-terminal --working-directory=${DIR}/javascript/ \
+        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_003 --port=4030'
 #sleep 6
 #gnome-terminal --working-directory=${DIR}/javascript/ \
 #        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_004 --port=4040'
