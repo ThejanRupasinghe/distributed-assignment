@@ -5,7 +5,7 @@ const udp = require('./lib/udp-message');
 let argv;
 let port = 3000;
 
-// take command line argumnets (port)
+// take command line arguments (port)
 argv = require('minimist')(process.argv.slice(2));
 
 // init according to argv

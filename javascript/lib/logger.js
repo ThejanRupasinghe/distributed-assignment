@@ -12,8 +12,9 @@ const active = {
     warning: true,
     info: true,
     ok: true,
-    wire: true,
+    wire: false,
     debug: true,
+    hb: false,
 };
 
 const methods = {
@@ -63,7 +64,14 @@ const methods = {
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
-    }
+    },
+    hb: (...str) => {
+        if(active.hb) {
+            str.unshift(FgYellow);
+            str.push(Reset);
+            console.log.apply(console, Array.prototype.slice.call(str));
+        }
+    },
 };
 
 module.exports = methods;

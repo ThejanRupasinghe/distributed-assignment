@@ -6,8 +6,16 @@ const tcp = require('./lib/tcp-message');
 const udp = require('./lib/udp-message');
 const ipLib = require('ip');
 const msgParser = require('./lib/message-parser');
+const searchAlgo = require('./lib/search_algo');
+const fileController = require('./lib/file-controller');
+const MusicFile = require('./lib/music-file');
 
+// server constants
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
+const MAX_FILES_PER_NODE = 5;
+const MIN_FILES_PER_NODE = 3;
+const MAX_FILE_SIZE = 10;
+const MIN_FILE_SIZE = 2;
 
 // stores local ip and default port, later adds name
 let myNode = {
@@ -15,6 +23,9 @@ let myNode = {
     port: 4000,
     name: 'node_' + ipLib.address()
 };
+
+// to store music files for the node
+let files = {};
 
 // routing table
 const routingTable = {};
@@ -129,7 +140,6 @@ function heartBeatAndDiscover() {
             iterCount++;
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
-                iterCount++;
                 if (err !== null) {
                     // This node has failed
                     logger.error("Node:", nodeKey, 'is dead');
@@ -146,18 +156,17 @@ function heartBeatAndDiscover() {
                         logger.ok('Node: Inform Bootstrap server about the missing node');
                     })
                 } else {
-                    logger.ok("Node:", nodeKey, 'is LIVE')
+                    logger.hb("Node:", nodeKey, 'is LIVE')
                 }
             });
         });
 
-        if(iterCount === Object.keys(routingTable).length) {
-            // check the routing table entry count and try to discover more
-            if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
-                // discover
-                logger.warning('Node : Not enough nodes in routing table. try to discover');
-                discover();
-            }
+        //TODO: discover only if LIVE
+        // check the routing table entry count and try to discover more
+        if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
+            // discover
+            logger.hb('Node: Not enough nodes in routing table. try to discover');
+            discover();
         }
     }, HEART_BEAT_TIME_OUT);
 }
@@ -239,12 +248,12 @@ function shutdown(error) {
 }
 
 /**
- * Server start - starts UDP listening and CLI
+ * Server start - starts UDP listening, CLI and picks files
  */
 function start() {
     udpStart();
     cliStart();
-    //TODO: add fileName picking
+    pickFiles();
 }
 
 /**
@@ -255,6 +264,11 @@ function udpStart() {
         let body = req.body;
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
+            case 'ping':
+                break;
+            case 'pong':
+                break;
+
             case msgParser.JOIN: // name, address
                 routingTable[body.node.name] = {
                     ip: body.node.ip,
@@ -286,8 +300,25 @@ function udpStart() {
                 //TODO: complete
                 search(body.searchString,
                     {ip: body.node.ip, port: body.node.port},
-                    body.hopCount,
+                    parseInt(body.hopCount),
                     {ip: req.rinfo.address, port: req.rinfo.port});
+                break;
+
+            case msgParser.SER_OK:
+                //TODO: complete
+                logger.debug("Node: Search Results\n--------------");
+                logger.debug("From - " + body.node.ip + ":" + body.node.port);
+                logger.debug("Files - " + body.fileNames);
+                logger.debug("Hop Count - " + body.hopCount + "\n---------------");
+                break;
+
+            case 'send-msg': // not reliable
+                require('./functions/send-msg').serverHandle(req, res, routingTable, name);
+                break;
+            case 'send-msg-rel': // reliable
+                break;
+            case 'con-graph':
+                require('./functions/con-graph').serverHandle(req, res, routingTable, name);
                 break;
             case 'delete':
                 if (routingTable[msg.name]) {
@@ -307,6 +338,15 @@ function udpStart() {
  */
 function cliStart() {
     cli.init({
+        'send-msg': (params) => { // (target, msg, ttl) not reliable
+            require('./functions/send-msg').cli(params, routingTable, myNode.name);
+        },
+        'send-msg-rel': (params) => { // reliable (target, msg, ttl)
+
+        },
+        'con-graph': (params) => { // ttl,
+            require('./functions/con-graph').cli(params, routingTable)
+        },
         'delete': () => {
             let count = 0;
             Object.keys(routingTable).forEach(k => {
@@ -333,24 +373,32 @@ function cliStart() {
 
             search(searchString, myNode, 0, null);
         },
+        'files': () => {
+            logger.print(files);
+        },
         'exit': () => {
             shutdown(0);
         }
     });
 }
 
-// TODO: randomly picked from FileNames.txt . Random size 2-10MB
-let files = {
-    "hell": {
-        "size": 5
-    },
-    "hello world": {
-        "size": 4
-    },
-    "world": {
-        "size": 3
-    }
-};
+/**
+ * 1. Picks random file count from 3-5 and selects random file names of that count
+ * 2. Iterate through picked file names and adds objects of random size 2-10 to files
+ */
+function pickFiles() {
+    let randomFileCount = random.getRandomIntFromInterval(MIN_FILES_PER_NODE, MAX_FILES_PER_NODE);
+    let randomSetOfFileNames = random.selectRandom(randomFileCount - 1, fileController.fileNames);
+
+    Object.keys(randomSetOfFileNames).forEach((key) => {
+        //TODO: Project description says "generate random size on file request". Keep this.
+        let randomFileSize = random.getRandomIntFromInterval(MIN_FILE_SIZE, MAX_FILE_SIZE);
+        // let musicFile = new MusicFile.MusicFile(randomSetOfFileNames[key], randomFileSize);
+        // files.push(musicFile);
+        files[randomSetOfFileNames[key]] = {size: randomFileSize};
+    });
+}
+
 
 /**
  * Random walk search
@@ -369,44 +417,28 @@ function search(searchString, searchNode, hopCount, requestNode) {
     let found = false;
 
     searchString = searchString.toString().slice(1, -1);
-    searchString = searchString.toLowerCase();
 
-    let searchArr = searchString.split(" ");
+    let fileNames = Object.keys(files);
 
-    //regex to only search full words
-    // let reg = new RegExp(".*" + searchString + ".*");
-    // name.match(reg)
-
-    let resultFileNames = [];
-
-    Object.keys(files).forEach(name => {
-        name = name.toLowerCase();
-        let nameArr = name.split(" ");
-        let count = 0;
-        searchArr.forEach(searchWord => {
-            nameArr.forEach(nameWord => {
-                if (searchWord === nameWord) {
-                    count++;
-                }
-            })
-        });
-        if (count === searchArr.length) {
-            found = true;
-            console.log(name);
-            resultFileNames.push(name);
-        }
-    });
+    //returns an array
+    let resultFileNames = searchAlgo.search(searchString, fileNames);
+    if (resultFileNames.length !== 0) {
+        found = true;
+        logger.debug("Node: Search Results - " + resultFileNames);
+    }
 
     if (!found) {
-        //TODO: search msg passing goes here
-        if (Object.keys(routingTable).length > 1) {
+        // search message passing - SER
+        if (Object.keys(routingTable).length > 0) {
             let nextNode = random.pickOne(routingTable);
 
-            while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
-                nextNode = random.pickOne(routingTable);
+            if (requestNode !== null) {
+                while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
+                    nextNode = random.pickOne(routingTable);
+                }
             }
 
-            logger.debug("Node: Picked Search Node - " + nextNode);
+            logger.debug("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
 
             hopCount = hopCount + 1;
 
@@ -433,8 +465,9 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 node: myNode,
             };
 
-            udp.send(searchNode, data, (res, err)=>{
-
+            // send search results - SEROK
+            udp.send(searchNode, data, (res, err) => {
+                //TODO: complete
             });
         }
     }
