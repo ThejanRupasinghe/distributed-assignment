@@ -156,7 +156,7 @@ function heartBeatAndDiscover() {
                         logger.ok('Node: Inform Bootstrap server about the missing node');
                     })
                 } else {
-                    logger.hb("Node:", nodeKey, 'is LIVE')
+                    logger.hb("Node:", nodeKey, 'is LIVE');
                 }
             });
         });
@@ -301,10 +301,10 @@ function udpStart() {
 
             case msgParser.SER_OK:
                 //TODO: complete
-                logger.debug("Node: Search Results\n--------------");
-                logger.debug("From - " + body.node.ip + ":" + body.node.port);
-                logger.debug("Files - " + body.fileNames);
-                logger.debug("Hop Count - " + body.hopCount + "\n---------------");
+                logger.ok("Node: Search Results\n-------------------");
+                logger.ok("From - " + body.node.ip + ":" + body.node.port);
+                logger.ok("Files - " + body.fileNames);
+                logger.ok("Hop Count - " + body.hopCount + "\n-------------------");
                 break;
             case 'delete':
                 if (routingTable[msg.name]) {
