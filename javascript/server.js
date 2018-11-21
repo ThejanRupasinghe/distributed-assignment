@@ -10,6 +10,7 @@ const searchAlgo = require('./lib/search_algo');
 const fileController = require('./lib/file-controller');
 const MusicFile = require('./lib/music-file');
 const httpServer = require('./lib/http-server');
+const request = require('request');
 
 // server constants
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
@@ -17,6 +18,7 @@ const MAX_FILES_PER_NODE = 5;
 const MIN_FILES_PER_NODE = 3;
 const MAX_FILE_SIZE = 10;
 const MIN_FILE_SIZE = 2;
+const MAX_HOP_COUNT = 10;
 
 // stores local ip and default port, later adds name
 let myNode = {
@@ -50,6 +52,8 @@ if (argv.bsIP && argv.bsPort) {
     bsNode.ip = argv.bsIP;
     bsNode.port = argv.bsPort;
 }
+
+//TODO: pass wire and heartbeat log enable as a argv param
 
 // print out taken information
 logger.ok("=========== ", myNode.name, ' ==============');
@@ -303,10 +307,15 @@ function udpStart() {
 
             case msgParser.SER_OK:
                 //TODO: complete
-                logger.ok("Node: Search Results\n-------------------");
+                logger.ok("Node: Search Results\n----------------------------");
                 logger.ok("From - " + body.node.ip + ":" + body.node.port);
-                logger.ok("Files - " + body.fileNames);
-                logger.ok("Hop Count - " + body.hopCount + "\n-------------------");
+                let fileNames = body.fileNames;
+                if (fileNames.length === 0) {
+                    logger.warning("NO FILES FOUND.")
+                } else {
+                    logger.ok("Files - " + fileNames);
+                }
+                logger.ok("Hop Count - " + body.hopCount + "\n----------------------------");
                 break;
             case 'delete':
                 if (routingTable[msg.name]) {
@@ -358,6 +367,18 @@ function cliStart() {
         'con-graph': () => {
             httpServer.createConnectionGraph(routingTable);
         },
+        'download': (params) => {
+            let fileName = params['_'][1];
+            let ip = params['_'][2];
+            let port = params['_'][3];
+
+            request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
+                (err, response, body) => {
+                    console.log(body);
+                });
+
+            console.log(params)
+        },
         'exit': () => {
             shutdown(0);
         }
@@ -407,6 +428,8 @@ function search(searchString, searchNode, hopCount, requestNode) {
     if (resultFileNames.length !== 0) {
         found = true;
         logger.debug("Node: Search Results - " + resultFileNames);
+    } else {
+        logger.debug("Node: Search not found.")
     }
 
     if (!found) {
@@ -414,9 +437,29 @@ function search(searchString, searchNode, hopCount, requestNode) {
         if (Object.keys(routingTable).length > 0) {
             let nextNode = random.pickOne(routingTable);
 
-            if (requestNode !== null) {
-                while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
-                    nextNode = random.pickOne(routingTable);
+            if (requestNode !== null) { // not requested by me
+
+                // for two node infinite loop problem
+                if (Object.keys(routingTable).length === 1) {
+                    let data = {
+                        type: msgParser.SER_OK,
+                        hopCount: hopCount,
+                        fileNames: resultFileNames,
+                        node: myNode,
+                    };
+
+                    // send search not found - SEROK
+                    udp.send(searchNode, data, (res, err) => {
+                        //TODO: complete
+                    });
+
+                    return
+
+                } else {
+                    // no need to send to requested node
+                    while ((requestNode.ip === nextNode.ip) && (requestNode.port === nextNode.port)) {
+                        nextNode = random.pickOne(routingTable);
+                    }
                 }
             }
 
@@ -424,17 +467,32 @@ function search(searchString, searchNode, hopCount, requestNode) {
 
             hopCount = hopCount + 1;
 
-            let data = {
-                searchString: searchString,
-                node: searchNode,
-                hopCount: hopCount,
-                type: msgParser.SER,
-            };
+            if (hopCount > MAX_HOP_COUNT) {
+                let data = {
+                    type: msgParser.SER_OK,
+                    hopCount: hopCount,
+                    fileNames: resultFileNames,
+                    node: myNode,
+                };
 
-            udp.send(nextNode, data, (res, err) => {
-                //TODO: complete
-            });
+                // send search not found - SEROK
+                udp.send(searchNode, data, (res, err) => {
+                    //TODO: complete
+                });
+            } else {
+                let data = {
+                    searchString: searchString,
+                    node: searchNode,
+                    hopCount: hopCount,
+                    type: msgParser.SER,
+                };
+
+                udp.send(nextNode, data, (res, err) => {
+                    //TODO: complete
+                });
+            }
         }
+        // if files are found
     } else {
         // file is found in the search query originating node
         if (requestNode === null) {

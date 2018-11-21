@@ -6,8 +6,8 @@ const udpServer = dgram.createSocket('udp4');
 const uuid = require('uuid/v1');
 const crypto = require('crypto');
 
-const buf = crypto.randomBytes(256);
-crypto.
+const buf = crypto.randomBytes(25600000);
+
 console.log(buf);
 
 // let bsAddress = {

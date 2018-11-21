@@ -1,7 +1,7 @@
-let app = require('express')();
-let http = require('http');
-let logger = require('./logger');
-let fileController = require('./file-controller');
+const app = require('express')();
+const http = require('http');
+const logger = require('./logger');
+const fileController = require('./file-controller');
 const request = require('request');
 
 module.exports.init = (port) => {
@@ -9,6 +9,7 @@ module.exports.init = (port) => {
         // let x = fileController.generateRandomData(1);
         // console.log(x);
         // TODO get the file
+        console.log(req.params['query']);
         res.send("This is your file");
     });
 
@@ -24,7 +25,7 @@ module.exports.init = (port) => {
     server.listen(port);
 
     server.on('listening', () => {
-        logger.info('HTTP server is started at', port);
+        logger.info('HTTP: HTTP server started at', port);
     });
 };
 
