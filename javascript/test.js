@@ -4,6 +4,11 @@ const net = require('net');
 const dgram = require('dgram');
 const udpServer = dgram.createSocket('udp4');
 const uuid = require('uuid/v1');
+const crypto = require('crypto');
+
+const buf = crypto.randomBytes(256);
+crypto.
+console.log(buf);
 
 // let bsAddress = {
 //     ip: '0.0.0.0',
@@ -39,6 +44,6 @@ const uuid = require('uuid/v1');
 //
 // console.log(body);
 
-console.log(Math.random().toString());
-
-console.log(uuid().split("-"));
+// console.log(Math.random().toString());
+//
+// console.log(uuid().split("-"));

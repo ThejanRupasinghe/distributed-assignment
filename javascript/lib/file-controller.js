@@ -1,4 +1,5 @@
-let sha256 = require('sha256');
+const crypto = require('crypto');
+const sha256 = require('sha256');
 
 const fileNames = [
     "Adventures of Tintin",
@@ -31,7 +32,8 @@ const fileNames = [
 let generateRandomData = (size) => {
     size = size * 1000000;  // convert megabytes to bytes
     // return new Blob([new ArrayBuffer(size)], {type: 'application/octet-stream'});
-    return new ArrayBuffer(size);
+    let buffer = crypto.randomBytes(size);
+    return buffer;
 };
 
 /**
