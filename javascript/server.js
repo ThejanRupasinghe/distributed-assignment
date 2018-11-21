@@ -9,6 +9,7 @@ const msgParser = require('./lib/message-parser');
 const searchAlgo = require('./lib/search_algo');
 const fileController = require('./lib/file-controller');
 const MusicFile = require('./lib/music-file');
+const httpServer = require('./lib/http-server');
 
 // server constants
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
@@ -252,6 +253,7 @@ function shutdown(error) {
  */
 function start() {
     udpStart();
+    httpServer.init(myNode.port + 5);
     cliStart();
     pickFiles();
 }
@@ -352,6 +354,9 @@ function cliStart() {
         },
         'files': () => {
             logger.print(files);
+        },
+        'con-graph': () => {
+            httpServer.createConnectionGraph(routingTable);
         },
         'exit': () => {
             shutdown(0);
