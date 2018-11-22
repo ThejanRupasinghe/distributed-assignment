@@ -142,9 +142,9 @@ function heartBeatAndDiscover() {
         // send live request to all nodes
         let iterCount = 0;
         Object.keys(routingTable).forEach(nodeKey => {
-            iterCount++;
             let node = routingTable[nodeKey];
             udp.send(node, {type: msgParser.LIVE, node: myNode}, (res, err) => {
+                iterCount++;
                 if (err !== null) {
                     // This node has failed
                     logger.error("Node:", nodeKey, 'is dead');
@@ -154,6 +154,7 @@ function heartBeatAndDiscover() {
                     let unregMsg = msgParser.generateUNREG({
                         ip: node.ip, port: node.port, name: nodeKey
                     });
+
                     tcp.init(bsNode.ip, bsNode.port, (error) => {
                         logger.error(error);
                     });
@@ -163,16 +164,16 @@ function heartBeatAndDiscover() {
                 } else {
                     logger.hb("Node:", nodeKey, 'is LIVE');
                 }
+
+                if(iterCount === Object.keys(routingTable).length) {
+                    if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
+                        // discover
+                        logger.hb('Node: Not enough nodes in routing table. try to discover');
+                        discover();
+                    }
+                }
             });
         });
-
-        //TODO: discover only if LIVE
-        // check the routing table entry count and try to discover more
-        if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
-            // discover
-            logger.hb('Node: Not enough nodes in routing table. try to discover');
-            discover();
-        }
     }, HEART_BEAT_TIME_OUT);
 }
 
@@ -257,7 +258,7 @@ function shutdown(error) {
  */
 function start() {
     udpStart();
-    httpServer.init(myNode.port + 5);
+    httpServer.init(myNode.port + 5, routingTable, myNode);
     cliStart();
     pickFiles();
 }
@@ -365,7 +366,7 @@ function cliStart() {
             logger.print(files);
         },
         'con-graph': () => {
-            httpServer.createConnectionGraph(routingTable);
+            httpServer.createConnectionGraph(routingTable, myNode);
         },
         'download': (params) => {
             let fileName = params['_'][1];
