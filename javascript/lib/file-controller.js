@@ -1,5 +1,7 @@
 const crypto = require('crypto');
 const sha256 = require('sha256');
+const fs = require('fs');
+const logger = require('./logger');
 
 const fileNames = [
     "Adventures of Tintin",
@@ -44,11 +46,36 @@ let calcHash = (data) => {
     return sha256(data);
 };
 
+let verifyHash = (data, givenHash) => {
+    console.log(data);
+    console.log(givenHash);
+    console.log(calcHash(data));
+    let verified = (givenHash === calcHash(data));
+    if(verified){
+        logger.ok("FileController: Hash verified.")
+    } else {
+        logger.error("FileController: Hash verification failed. Un-matching hashes.")
+    }
+    return verified;
+};
+
+let writeToFile = (data, fileName) => {
+    let filePath = "../downloaded_files/"+fileName+".txt";
+    fs.writeFile(filePath, data, function (err) {
+        if (err){
+            logger.error("FileController: Error occurred in writing file.")
+        } else {
+            logger.ok("FileController: " + fileName + " wrote to file.")
+        }
+    });
+};
 
 module.exports = {
     fileNames,
     generateRandomData,
     calcHash,
+    verifyHash,
+    writeToFile,
 };
 
 

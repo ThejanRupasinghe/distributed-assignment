@@ -165,7 +165,8 @@ function heartBeatAndDiscover() {
                     logger.hb("Node:", nodeKey, 'is LIVE');
                 }
 
-                if(iterCount === Object.keys(routingTable).length) {
+                // TODO: routing table length changes inside the previous loop
+                if (iterCount === Object.keys(routingTable).length) {
                     if ((Object.keys(routingTable).length) < 4 && (Object.keys(routingTable).length > 0)) {
                         // discover
                         logger.hb('Node: Not enough nodes in routing table. try to discover');
@@ -217,8 +218,17 @@ function shutdown(error) {
         let totalRoutingTableCount = Object.keys(routingTable).length;
 
         if (totalRoutingTableCount === 0) {
-            logger.ok("Node: Leaving");
-            process.exit(0);
+            // inform to bootstrap server
+            let unregMsg = msgParser.generateUNREG({
+                ip: myNode.ip, port: myNode.port, name: myNode.name
+            });
+            tcp.init(bsNode.ip, bsNode.port, (error) => {
+                logger.error(error);
+            });
+            tcp.sendMessage(unregMsg, (receivedMsg) => {
+                logger.ok("Node: Leaving");
+                process.exit(0);
+            });
         }
 
         Object.keys(routingTable).forEach(nodeKey => {
@@ -239,7 +249,7 @@ function shutdown(error) {
                         });
                         tcp.sendMessage(unregMsg, (receivedMsg) => {
                             logger.ok("Node: Leaving");
-                            process.exit(error);
+                            process.exit(0);
                         });
                     }
 
@@ -258,9 +268,9 @@ function shutdown(error) {
  */
 function start() {
     udpStart();
-    httpServer.init(myNode.port + 5, routingTable, myNode);
     cliStart();
     pickFiles();
+    httpServer.init(myNode.port + 5, routingTable, myNode, files);
 }
 
 /**
@@ -370,15 +380,27 @@ function cliStart() {
         },
         'download': (params) => {
             let fileName = params['_'][1];
-            let ip = params['_'][2];
-            let port = params['_'][3];
 
-            request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
-                (err, response, body) => {
-                    console.log(body);
-                });
+            // if file found on the search query issued node
+            if (params['_'].length === 2) {
 
-            console.log(params)
+            } else {
+                let ip = params['_'][2];
+                let port = params['_'][3];
+
+                request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
+                    (err, response, body) => {
+                        console.log(body);
+                        if(body.file === 'NOT FOUND'){
+                            logger.error("Node: File not found on requested node.")
+                        } else {
+                            if(fileController.verifyHash(body.file, body.hash)){
+                                fileController.writeToFile(body.file.data, fileName)
+                            }
+                        }
+                    });
+            }
+
         },
         'exit': () => {
             shutdown(0);
@@ -428,9 +450,9 @@ function search(searchString, searchNode, hopCount, requestNode) {
     let resultFileNames = searchAlgo.search(searchString, fileNames);
     if (resultFileNames.length !== 0) {
         found = true;
-        logger.debug("Node: Search Results - " + resultFileNames);
+        logger.debug("Node: Search - " + searchString + " - Results - " + resultFileNames);
     } else {
-        logger.debug("Node: Search not found.")
+        logger.debug("Node: Search - " + searchString + " - not found.")
     }
 
     if (!found) {
@@ -466,9 +488,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
 
             logger.debug("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
 
-            hopCount = hopCount + 1;
-
-            if (hopCount > MAX_HOP_COUNT) {
+            if (hopCount === MAX_HOP_COUNT) {
                 let data = {
                     type: msgParser.SER_OK,
                     hopCount: hopCount,
@@ -481,6 +501,8 @@ function search(searchString, searchNode, hopCount, requestNode) {
                     //TODO: complete
                 });
             } else {
+                hopCount = hopCount + 1;
+
                 let data = {
                     searchString: searchString,
                     node: searchNode,

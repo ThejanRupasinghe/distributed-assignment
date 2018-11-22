@@ -16,7 +16,6 @@ const printPrefix = "[PRINT]:",
     hbPrefix = "[HB]:"
 ;
 
-
 const active = {
     print: true,
     error: true,

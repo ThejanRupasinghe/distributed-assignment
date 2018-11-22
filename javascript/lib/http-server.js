@@ -4,19 +4,34 @@ const logger = require('./logger');
 const fileController = require('./file-controller');
 const request = require('request');
 
-module.exports.init = (port, routingTable, myNode) => {
+module.exports.init = (port, routingTable, myNode, files) => {
     app.get('/get-file/:query', (req, res) => {
-        // let x = fileController.generateRandomData(1);
-        // console.log(x);
-        // TODO get the file
-        console.log(req.params['query']);
 
-        let file = fileController.generateRandomData(.3); // approximately 1MB
-        let hash = fileController.calcHash(file);
-        res.send({
-            file: file,
-            hash: hash
-        });
+        let fileName = req.params['query'];
+        console.log(fileName);
+        console.log(files);
+        console.log(fileName in files);
+
+        if(fileName in files) {
+            let fileSize = files[fileName].size;
+
+            let file = fileController.generateRandomData(fileSize); //file size in MBs
+            let hash = fileController.calcHash(file);
+
+            console.log(fileName, fileSize);
+            console.log(file);
+            console.log(hash);
+
+            res.send({
+                file: file,
+                hash: hash
+            });
+        } else {
+            console.log("FileName not in file list");
+            res.send({
+                file: 'NOT FOUND'
+            })
+        }
     });
 
     app.get('/con-graph', (req, res) => {
