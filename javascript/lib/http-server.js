@@ -5,12 +5,11 @@ const fileController = require('./file-controller');
 const request = require('request');
 
 module.exports.init = (port, routingTable, myNode, files) => {
+
+    //file sending mechanism
     app.get('/get-file/:query', (req, res) => {
 
         let fileName = req.params['query'];
-        console.log(fileName);
-        console.log(files);
-        console.log(fileName in files);
 
         if(fileName in files) {
             let fileSize = files[fileName].size;
@@ -18,22 +17,21 @@ module.exports.init = (port, routingTable, myNode, files) => {
             let file = fileController.generateRandomData(fileSize); //file size in MBs
             let hash = fileController.calcHash(file);
 
-            console.log(fileName, fileSize);
-            console.log(file);
-            console.log(hash);
+            logger.info("HTTP: Sends file and hash - " + fileName + "- to " + req.hostname);
 
             res.send({
                 file: file,
                 hash: hash
             });
         } else {
-            console.log("FileName not in file list");
+            logger.error("HTTP: Requested file name is not in the file list");
             res.send({
                 file: 'NOT FOUND'
             })
         }
     });
 
+    //
     app.get('/con-graph', (req, res) => {
 
         let ttl = parseInt(req.query['ttl']); // get the ttl from the request
@@ -118,7 +116,7 @@ module.exports.createConnectionGraph = (routingTable) => {
                     console.log(line.join(', '));
                 });
 
-                logger.print('past above adjacency matrix as text:');
+                logger.print('paste above adjacency matrix as text:');
                 logger.print('http://graphonline.ru/en/create_graph_by_matrix');
             }
         });

@@ -54,6 +54,13 @@ if (argv.bsIP && argv.bsPort) {
 }
 
 //TODO: pass wire and heartbeat log enable as a argv param
+if (argv.debug) {
+    logger.activate('debug');
+}
+
+if (argv.wire) {
+    logger.activate('wire');
+}
 
 // print out taken information
 logger.ok("=========== ", myNode.name, ' ==============');
@@ -379,7 +386,7 @@ function cliStart() {
             httpServer.createConnectionGraph(routingTable, myNode);
         },
         'download': (params) => {
-            let fileName = params['_'][1];
+            let fileName = params['_'][1].toString().slice(1, -1);
 
             // if file found on the search query issued node
             if (params['_'].length === 2) {
@@ -390,12 +397,12 @@ function cliStart() {
 
                 request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
                     (err, response, body) => {
-                        console.log(body);
-                        if(body.file === 'NOT FOUND'){
-                            logger.error("Node: File not found on requested node.")
+                        let jsonBody = JSON.parse(body);
+                        if (jsonBody.file === 'NOT FOUND') {
+                            logger.error("Node: File not found on the requested node.")
                         } else {
-                            if(fileController.verifyHash(body.file, body.hash)){
-                                fileController.writeToFile(body.file.data, fileName)
+                            if (fileController.verifyHash(jsonBody.file, jsonBody.hash)) {
+                                fileController.writeToFile(jsonBody.file.data, fileName)
                             }
                         }
                     });
@@ -450,9 +457,9 @@ function search(searchString, searchNode, hopCount, requestNode) {
     let resultFileNames = searchAlgo.search(searchString, fileNames);
     if (resultFileNames.length !== 0) {
         found = true;
-        logger.debug("Node: Search - " + searchString + " - Results - " + resultFileNames);
+        logger.info("Node: Search - " + searchString + " - Results - " + resultFileNames);
     } else {
-        logger.debug("Node: Search - " + searchString + " - not found.")
+        logger.info("Node: Search - " + searchString + " - not found.")
     }
 
     if (!found) {
@@ -486,7 +493,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 }
             }
 
-            logger.debug("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
+            logger.info("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
 
             if (hopCount === MAX_HOP_COUNT) {
                 let data = {

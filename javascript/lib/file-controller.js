@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const sha256 = require('sha256');
 const fs = require('fs');
+const path = require('path');
 const logger = require('./logger');
 
 const fileNames = [
@@ -32,26 +33,33 @@ const fileNames = [
  * @returns {ArrayBuffer} of size 'size'
  */
 let generateRandomData = (size) => {
-    size = size * 1000000;  // convert megabytes to bytes
+    size = size * 1048576 / 3.5625;  // convert megabytes to bytes
     // return new Blob([new ArrayBuffer(size)], {type: 'application/octet-stream'});
-    let buffer = crypto.randomBytes(size);
+    //TODO: not the exact MB size, small amount larger
+    let buffer = crypto.randomBytes(Math.round(size));
     return buffer;
 };
 
 /**
- * Calculate SHA256 of data
+ * Calculates SHA256 of data
  * @param data
  */
 let calcHash = (data) => {
-    return sha256(data);
+    let hash = sha256(data);
+    logger.debug("FileController: Calculated Hash - " + hash);
+    return hash;
 };
 
+/**
+ * Verifies the hash with given data.
+ * @param data data to calculate hash
+ * @param givenHash provided hash value with data
+ * @returns {boolean} true if both hashes match, false otherwise
+ */
 let verifyHash = (data, givenHash) => {
-    console.log(data);
-    console.log(givenHash);
-    console.log(calcHash(data));
+    logger.debug("FileController: Given Hash - " + givenHash);
     let verified = (givenHash === calcHash(data));
-    if(verified){
+    if (verified) {
         logger.ok("FileController: Hash verified.")
     } else {
         logger.error("FileController: Hash verification failed. Un-matching hashes.")
@@ -59,13 +67,19 @@ let verifyHash = (data, givenHash) => {
     return verified;
 };
 
+/**
+ * Writes given data to a file with the given file name
+ * @param data data tobe written
+ * @param fileName file name
+ */
 let writeToFile = (data, fileName) => {
-    let filePath = "../downloaded_files/"+fileName+".txt";
+    let filePath = path.join(__dirname, '..', 'downloaded_files', fileName + ".txt");
     fs.writeFile(filePath, data, function (err) {
-        if (err){
-            logger.error("FileController: Error occurred in writing file.")
+        if (err) {
+            logger.error("FileController: Error occurred in writing file.");
+            logger.error(err);
         } else {
-            logger.ok("FileController: " + fileName + " wrote to file.")
+            logger.ok("FileController: " + fileName + " wrote to the file.")
         }
     });
 };

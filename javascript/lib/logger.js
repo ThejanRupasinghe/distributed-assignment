@@ -16,7 +16,7 @@ const printPrefix = "[PRINT]:",
     hbPrefix = "[HB]:"
 ;
 
-const active = {
+let active = {
     print: true,
     error: true,
     warning: true,
@@ -89,6 +89,9 @@ const methods = {
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
+    },
+    activate: (logLevel)=>{
+        active[logLevel] = true;
     },
 };
 
