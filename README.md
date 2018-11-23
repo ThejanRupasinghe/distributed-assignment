@@ -1,30 +1,35 @@
 # Distributed NodeJs
 ### Starting servers
-1. first start the bootstrap server (boot.js)
-    * ``port`` (default is 3000)
+1. Start the bootstrap server inside ``BootstrapServer/C/Linux``
+    * Compile ``gcc P2PRegistry.c``
+    * Run ``./a.out <port_number>`` eg: ``./a.out 5050``
     
-2. then start any number of servers (server.js)
-    * ``bs`` (port of the bootstrap server)
-    * ``port`` (default is 4000)
-    * ``name`` (default is node_{port - 4000})
+2. Start Node servers (server.js)
+    * Command line arguments
+        * ``bsIP`` - IP of the bootstrap server
+        * ``bsPort`` - Port of the bootstrap server
+        * ``name`` - name of the node in the format 'node_001'
+        * ``port`` - server port
+        * ``wire`` - enables wire logs
+        * ``debug`` - enable debug logs
+    * eg: ``node server.js --bsIP=127.0.0.1 --bsPort=5050 --name=node_001 --port=4000``
+    * eg: wire log enabled ``node server.js --bsIP=127.0.0.1 --bsPort=5050 --name=node_001 --port=4000 --wire``
     
 ### CLI
-1. for bootstrap server
-    * ``at`` - print the address table
-2. for normal servers
-    * ``at`` - print the address table
-    * ``name`` - print the name
-    * ``send-msg`` - send a message to a node by name
-        * ``target`` - target node name
-        * ``msg`` - message you want to send
-        * ``ttl`` - number of hops want to check
-     * ``send-msg-rel`` - send a message reliably*
-        * (same as above)
-     * ``con-graph`` - draw the connectivity graph
-        * ``ttl`` - number of hops want to check
-        * http://graphonline.ru/en/create_graph_by_matrix
-        * past the cli output in to this url as text format
+* ``at`` - prints the address table
+* ``name`` - prints the name
+* ``files`` - prints the file list in the node
+* ``exit`` - gracefully shuts down the node
+* ``search "harry"`` - searches for a string
+* ``download "Harry Potter" 192.168.1.6 4001`` - to download the given file from the given IP and Port
+ * ``con-graph`` - draws the connectivity graph
+    * ``ttl`` - number of hops want to check
+    * http://graphonline.ru/en/create_graph_by_matrix
+    * past the cli output in to this url as text format
 
 ### run.sh
 * Help to create servers.
+* Please make sure to edit the $DIR variable to your working dir.
 * If not execute use ``chmod +x run.sh && ./run.sh``
+
+
