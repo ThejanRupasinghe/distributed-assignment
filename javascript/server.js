@@ -53,7 +53,7 @@ if (argv.bsIP && argv.bsPort) {
     bsNode.port = argv.bsPort;
 }
 
-//TODO: pass wire and heartbeat log enable as a argv param
+//TODO: pass heartbeat log enable as a argv param
 if (argv.debug) {
     logger.activate('debug');
 }

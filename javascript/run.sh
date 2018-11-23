@@ -25,6 +25,10 @@ gnome-terminal --working-directory=${DIR}/javascript/ \
         --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_006 --port=4060'
 gnome-terminal --working-directory=${DIR}/javascript/ \
         --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_007 --port=4070'
+gnome-terminal --working-directory=${DIR}/javascript/ \
+        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_008 --port=4070'
+gnome-terminal --working-directory=${DIR}/javascript/ \
+        --tab -e 'node server.js --bsPort=5050 --bsIP=127.0.0.1 --name=node_009 --port=4070'
 
 #        --tab -e 'node server.js --port=4001 --bs=3000' \
 #        --tab -e 'node server.js --port=4002 --bs=3000' \
