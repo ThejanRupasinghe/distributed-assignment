@@ -4,6 +4,13 @@ const logger = require('./logger');
 const fileController = require('./file-controller');
 const request = require('request');
 
+/**
+ * Initializes the HTTP Server for file transferring and connection matrix calculating
+ * @param port port for the HTTP server to listen on
+ * @param routingTable routing table of the node
+ * @param myNode node details
+ * @param files file list of the node
+ */
 module.exports.init = (port, routingTable, myNode, files) => {
 
     //file sending mechanism
@@ -11,7 +18,7 @@ module.exports.init = (port, routingTable, myNode, files) => {
 
         let fileName = req.params['query'];
 
-        if(fileName in files) {
+        if (fileName in files) {
             let fileSize = files[fileName].size;
 
             let file = fileController.generateRandomData(fileSize); //file size in MBs
@@ -31,7 +38,7 @@ module.exports.init = (port, routingTable, myNode, files) => {
         }
     });
 
-    //
+    // collects data from all nodes to draw the connection graph matrix
     app.get('/con-graph', (req, res) => {
 
         let ttl = parseInt(req.query['ttl']); // get the ttl from the request
@@ -81,21 +88,27 @@ module.exports.init = (port, routingTable, myNode, files) => {
     });
 };
 
+/**
+ * Creates the connection graph matrix, Called from the cli command
+ * @param routingTable
+ */
 module.exports.createConnectionGraph = (routingTable) => {
     let keys = Object.keys(routingTable);
     let count = 0;
     let tbl = {};
-    Object.keys(routingTable).forEach(k => { // send request to all nodes
 
+    Object.keys(routingTable).forEach(k => { // send request to all nodes
         let data = {
             ttl: 5
         };
+
         let queryString = Object.keys(data).map(key => key + '=' + data[key]).join('&');
+
         request({
-            method: 'GET', url: 'http://' + routingTable[k]['ip'] + ':' +
-                (parseInt(routingTable[k]['port']) + 5) + '/con-graph?' + queryString
+            method: 'GET',
+            url: 'http://' + routingTable[k]['ip'] + ':' + (parseInt(routingTable[k]['port']) + 5) + '/con-graph?' + queryString
         }, (err, res, body) => {
-            count ++;
+            count++;
             body = JSON.parse(body);
 
             Object.keys(body.rTable).forEach(x => {

@@ -53,7 +53,7 @@ if (argv.bsIP && argv.bsPort) {
     bsNode.port = argv.bsPort;
 }
 
-//TODO: pass heartbeat log enable as a argv param
+// activates debug, wire and heartbeat logs
 if (argv.debug) {
     logger.activate('debug');
 }
@@ -62,7 +62,11 @@ if (argv.wire) {
     logger.activate('wire');
 }
 
-// print out taken information
+if(argv.hb){
+    logger.activate('hb');
+}
+
+// prints out taken information
 logger.ok("=========== ", myNode.name, ' ==============');
 logger.info("Node: Node Starting....");
 logger.info("Node: My Node: ", myNode);
