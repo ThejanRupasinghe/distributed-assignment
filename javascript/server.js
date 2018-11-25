@@ -62,7 +62,7 @@ if (argv.wire) {
     logger.activate('wire');
 }
 
-if(argv.hb){
+if (argv.hb) {
     logger.activate('hb');
 }
 
@@ -387,7 +387,9 @@ function cliStart() {
             logger.print(files);
         },
         'con-graph': () => {
-            httpServer.createConnectionGraph(routingTable, myNode);
+            httpServer.createConnectionGraph(routingTable, (table) => {
+
+            });
         },
         'download': (params) => {
             let fileName = params['_'][1].toString().slice(1, -1);

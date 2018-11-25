@@ -11,7 +11,7 @@ const request = require('request');
  * @param myNode node details
  * @param files file list of the node
  */
-module.exports.init = (port, routingTable, myNode, files) => {
+const init = (port, routingTable, myNode, files) => {
 
     //file sending mechanism
     app.get('/get-file/:query', (req, res) => {
@@ -86,13 +86,37 @@ module.exports.init = (port, routingTable, myNode, files) => {
     server.on('listening', () => {
         logger.info('HTTP: HTTP server started at', port);
     });
+
+    // to draw the offline connection graph
+    app.get('/get-con-graph', (req, res) => {
+        createConnectionGraph(routingTable, (tbl) => {
+
+            let tableArray = [];
+            tbl = JSON.parse(tbl);
+
+            Object.keys(tbl).forEach(node => {
+                let nodeCon = tbl[node];
+                nodeCon.forEach(con => {
+                    let conStr = {from: node, to: con};
+                    if (!(tableArray.some(e => (e.from === con && e.to === node)))){
+                        tableArray.push(conStr);
+
+                    }
+                });
+            });
+
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.send({table: tableArray});
+        });
+
+    });
 };
 
 /**
  * Creates the connection graph matrix, Called from the cli command
  * @param routingTable
  */
-module.exports.createConnectionGraph = (routingTable) => {
+const createConnectionGraph = (routingTable, cb) => {
     let keys = Object.keys(routingTable);
     let count = 0;
     let tbl = {};
@@ -131,7 +155,11 @@ module.exports.createConnectionGraph = (routingTable) => {
 
                 logger.print('paste above adjacency matrix as text:');
                 logger.print('http://graphonline.ru/en/create_graph_by_matrix');
+
+                cb(JSON.stringify(tbl));
             }
         });
     });
 };
+
+module.exports = {createConnectionGraph, init};

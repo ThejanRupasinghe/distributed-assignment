@@ -97,7 +97,7 @@ module.exports.send = (target, data, cb) => {
             };
             timeoutRef = setTimeout(() => {
                 return fn();
-            }, 500);
+            }, 500); //TODO: MUST THINK ABOUT THE TIMEOUT PERIOD
         });
 
         logger.wire("UDP : Sent - " + msg_send + " - " + target.ip + ":" + target.port);

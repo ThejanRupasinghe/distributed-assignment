@@ -1,0 +1,90 @@
+
+<!doctype html>
+<html>
+
+  <head>
+    <title>Distributed | Connection Graph</title>
+
+    <script type="text/javascript" src="dist/vis.js"></script>
+    <link href="dist/vis-network.min.css" rel="stylesheet" type="text/css" />
+
+    <style type="text/css">
+      #mynetwork {
+        width: 800px;
+        height: 500px;
+        border: 1px solid lightgray;
+      }
+    </style>
+  </head>
+
+  <body>
+
+    <h2>
+      Node Connection Graph
+    </h2>
+
+    <form style="display: inline;" onsubmit="return draw(event)">
+      HTTP Port Number:
+      <input style="display: inline;" type="text" name="port-no" id="port-no" required="required" pattern="[A-Za-z0-9]{1,20}">
+      <input style="display: inline;" type="submit" value="Submit">
+    </form>
+
+    <hr>
+
+    <div id="mynetwork"></div>
+
+    <script type="text/javascript">
+
+      function httpGetAsync(theUrl, callback){
+          var xmlHttp = new XMLHttpRequest();
+          xmlHttp.onreadystatechange = function() { 
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200)
+              callback(xmlHttp.responseText);
+          }
+        xmlHttp.open("GET", theUrl, true); // true for asynchronous 
+        xmlHttp.send(null);
+      };
+
+      function draw(e) {
+        e.preventDefault();
+
+        var portNumber = document.getElementById("port-no").value;
+
+        httpGetAsync("http://localhost:"+portNumber+"/get-con-graph", (data)=>{
+          data = JSON.parse(data);
+          // create an array with nodes
+          var nodes = new vis.DataSet([
+            {id: 'node_000', label: 'Node 0'},
+            {id: 'node_001', label: 'Node 1'},
+            {id: 'node_002', label: 'Node 2'},
+            {id: 'node_003', label: 'Node 3'},
+            {id: 'node_004', label: 'Node 4'},
+            {id: 'node_005', label: 'Node 5'},
+            {id: 'node_006', label: 'Node 6'},
+            {id: 'node_007', label: 'Node 7'},
+            {id: 'node_008', label: 'Node 8'},
+            {id: 'node_009', label: 'Node 9'},
+          ]);
+
+          // create an array with edges
+          var edges = new vis.DataSet(data.table);
+
+          // create a network
+          var container = document.getElementById('mynetwork');
+          var data = {
+            nodes: nodes,
+            edges: edges
+          };
+          var options = {};
+          var network = new vis.Network(container, data, options);
+        });
+
+        return false;
+      }
+    
+    </script>
+
+  </body>
+
+</html>
+
