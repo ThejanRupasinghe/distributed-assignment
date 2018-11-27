@@ -113,7 +113,8 @@ if (bsNode) {
                                     routingTable[k] = node;
                                     logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                                 } else {
-                                    logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
+                                    // TODO : implement scenario- more than 4 nodes, connecting to random 2 was not success
+                                    logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
                                 }
                             }
                         });
