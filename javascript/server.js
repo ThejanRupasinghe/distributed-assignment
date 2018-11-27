@@ -41,7 +41,7 @@ let argv = minimist(process.argv.slice(2));
 
 // init according to argv
 if (argv.port) {
-    myNode.port = argv.port;
+    myNode.port = parseInt(argv.port);
 }
 if (argv.name) {
     myNode.name = argv.name;
@@ -160,8 +160,11 @@ function heartBeatAndDiscover() {
                 if (err !== null) {
                     // This node has failed
                     logger.error("Node:", nodeKey, 'is dead');
+                    let deletingNode = routingTable[nodeKey];
                     delete routingTable[nodeKey];  // remove from my routing table
+                    logger.info("Node: Removed from routing table - " + deletingNode.ip + ":" + deletingNode.port);
 
+                    /* Found node will not unreg dead one from BS
                     // inform bootstrap server
                     let unregMsg = msgParser.generateUNREG({
                         ip: node.ip, port: node.port, name: nodeKey
@@ -173,6 +176,7 @@ function heartBeatAndDiscover() {
                     tcp.sendMessage(unregMsg, (receivedMsg) => {
                         logger.ok('Node: Inform Bootstrap server about the missing node');
                     })
+                     */
                 } else {
                     logger.hb("Node:", nodeKey, 'is LIVE');
                 }
@@ -199,13 +203,13 @@ function discover() {
     udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
         // connect here
         // if the given one is not myNode or not in my routing table add
-        if (res.body && !routingTable[res.body.node.ip+":"+res.body.node.port] && res.body.node.ip !== myNode.ip) {
+        if (res.body && !routingTable[res.body.node.ip + ":" + res.body.node.port] && ((res.body.node.ip !== myNode.ip) || (res.body.node.port !== myNode.port))) {
             // if (!((res.body.node.ip in routingTable) || (res.body.node.ip === myNode.ip))) {
             udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
                 if (err === null) {
                     let node = res1.body.node;
                     if (res1.body.success) {
-                        routingTable[res.body.node.ip+":"+res.body.node.port] = node;
+                        routingTable[res.body.node.ip + ":" + res.body.node.port] = node;
                         logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                     } else {
                         logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
@@ -253,15 +257,17 @@ function shutdown(error) {
                     // LEAVE_OK from everyone and then UNREG
                     if (leaveCount === totalRoutingTableCount) {
                         // inform to bootstrap server
-                        let unregMsg = msgParser.generateUNREG({
-                            ip: myNode.ip, port: myNode.port, name: myNode.name
-                        });
+                        let unregMsg = msgParser.generateUNREG(myNode);
+
                         tcp.init(bsNode.ip, bsNode.port, (error) => {
                             logger.error(error);
                         });
+
                         tcp.sendMessage(unregMsg, (receivedMsg) => {
-                            logger.ok("Node: Leaving");
-                            process.exit(0);
+                            if (msgParser.parseUNREGOK(receivedMsg) === 0) {
+                                logger.ok("Node: Leaving");
+                                process.exit(0);
+                            }
                         });
                     }
 
@@ -294,7 +300,7 @@ function udpStart() {
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
             case msgParser.JOIN: // name, address
-                routingTable[body.node.ip+":"+body.node.port] = {
+                routingTable[body.node.ip + ":" + body.node.port] = {
                     ip: body.node.ip,
                     port: body.node.port
                 };
@@ -314,7 +320,7 @@ function udpStart() {
                 break;
 
             case msgParser.LEAVE:
-                delete routingTable[body.node.ip+":"+body.node.port];
+                delete routingTable[body.node.ip + ":" + body.node.port];
                 logger.info("Node: Removed from routing table - " + body.node.ip + ":" + body.node.port);
 
                 res.send({type: msgParser.LEAVE_OK, success: true});

@@ -80,7 +80,7 @@ module.exports.generateUNREG = (node) => {
 };
 
 module.exports.parseUNREGOK = (response) => {
-    let responseArr = response.split(" ");
+    let responseArr = response.toString().split(" ");
 
     let status = responseArr[1];
 
@@ -172,7 +172,7 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
     if (JOIN === operation || LEAVE === operation) {
         udpStream.type = REQ;
         udpStream.body.node.ip = msgReceiveArr[3];
-        udpStream.body.node.port = msgReceiveArr[4];
+        udpStream.body.node.port = parseInt(msgReceiveArr[4]);
     } else if (ACK === operation) {
         udpStream.type = ACK;
     } else if (JOIN_OK === operation || LEAVE_OK === operation) {
@@ -194,7 +194,7 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
     } else if (DISC_OK === operation) {
         udpStream.type = RES;
         udpStream.body.node.ip = msgReceiveArr[4];
-        udpStream.body.node.port = msgReceiveArr[5];
+        udpStream.body.node.port = parseInt(msgReceiveArr[5]);
     } else if (SER === operation) {
         udpStream.type = REQ;
         udpStream.body.node.ip = msgReceiveArr[3];
