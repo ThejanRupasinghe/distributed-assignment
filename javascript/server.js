@@ -395,26 +395,31 @@ function cliStart() {
             let fileName = params['_'][1].toString().slice(1, -1);
 
             // if file found on the search query issued node
-            if (params['_'].length === 2) {
-
+            if (fileName.length < 1) {
+                logger.error("Enter the file name");
             } else {
-                let ip = params['_'][2];
-                let port = params['_'][3];
 
-                request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
-                    (err, response, body) => {
-                        let jsonBody = JSON.parse(body);
-                        if (jsonBody.file === 'NOT FOUND') {
-                            logger.error("Node: File not found on the requested node.")
-                        } else {
-                            if (fileController.verifyHash(jsonBody.file, jsonBody.hash)) {
-                                fileController.writeToFile(jsonBody.file.data, fileName)
+                if (params['_'].length === 2) {
+
+                } else {
+                    let ip = params['_'][2];
+                    let port = params['_'][3];
+
+                    request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
+                        (err, response, body) => {
+                            let jsonBody = JSON.parse(body);
+                            if (jsonBody.file === 'NOT FOUND') {
+                                logger.error("Node: File not found on the requested node.")
+                            } else {
+                                if (fileController.verifyHash(jsonBody.file, jsonBody.hash)) {
+                                    fileController.writeToFile(jsonBody.file.data, fileName)
+                                }
                             }
-                        }
-                    });
+                        });
+                }
             }
-
         },
+
         'exit': () => {
             shutdown(0);
         }
