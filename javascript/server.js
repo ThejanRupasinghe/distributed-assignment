@@ -75,7 +75,7 @@ logger.info("Node: Bootstrap Server: ", bsNode);
 // initial join to from bootstrap server
 if (bsNode) {
 
-    // initialize tcp connection to BS
+    // initialize tcp connection to BS (send unreg request)
     tcp.init(bsNode.ip, bsNode.port, (error) => {
         if (error != null) {
             logger.error("Node: Error connecting to Bootstrap Server");
@@ -87,62 +87,78 @@ if (bsNode) {
     // takes register message
     let regMsg = msgParser.generateREG(myNode);
 
-    tcp.sendMessage(regMsg, (receiveMsg) => {
+    tcp.sendMessage(msgParser.generateUNREG(myNode), (unregResponse) => {
 
-        msgParser.parseREGOK(receiveMsg.toString(), (nodes, noOfNodes, error) => {
-            if (nodes != null) {
-                if (noOfNodes === 0) {
-                    logger.info("Node: Registration successful. No nodes registered in the system.");
-                    start();
-                } else {
-                    logger.info("Node: Request is successful. Returning " + noOfNodes + " nodes.");
+        setTimeout(() => {
 
-                    logger.info("Node: Node List -", nodes);
+            // initialize tcp connection to BS (send reg request)
+            tcp.init(bsNode.ip, bsNode.port, (error) => {
+                if (error != null) {
+                    logger.error("Node: Error connecting to Bootstrap Server");
+                    logger.error(error);
+                    shutdown(1);
+                }
+            });
 
-                    start();
+            tcp.sendMessage(regMsg, (receiveMsg) => {
 
-                    if (noOfNodes >= 4) {
-                        nodes = random.selectRandom(1, nodes);
-                    }
+                msgParser.parseREGOK(receiveMsg.toString(), (nodes, noOfNodes, error) => {
+                    if (nodes != null) {
+                        if (noOfNodes === 0) {
+                            logger.info("Node: Registration successful. No nodes registered in the system.");
+                            start();
+                        } else {
+                            logger.info("Node: Request is successful. Returning " + noOfNodes + " nodes.");
 
-                    Object.keys(nodes).forEach(k => {
-                        let node = nodes[k];
-                        udp.send(node, {type: msgParser.JOIN, node: myNode}, (res, err) => {
-                            if (err === null) {
-                                if (res.body.success) {
-                                    routingTable[k] = node;
-                                    logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
-                                } else {
-                                    logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
-                                }
+                            logger.info("Node: Node List -", nodes);
+
+                            start();
+
+                            if (noOfNodes >= 4) {
+                                nodes = random.selectRandom(1, nodes);
                             }
-                        });
-                    });
-                }
 
-                // NOTE: check all nodes after 5 seconds
-                heartBeatAndDiscover();
+                            Object.keys(nodes).forEach(k => {
+                                let node = nodes[k];
+                                udp.send(node, {type: msgParser.JOIN, node: myNode}, (res, err) => {
+                                    if (err === null) {
+                                        if (res.body.success) {
+                                            routingTable[k] = node;
+                                            logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
+                                        } else {
+                                            logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
+                                        }
+                                    }
+                                });
+                            });
+                        }
 
-            } else {
-                switch (error) {
-                    case 9999:
-                        logger.error("Node: Registration failed. Entry already in the table.");
-                        break;
-                    case 9998:
-                        logger.error("Node: Registration failed. Invalid IP, Port or Username.");
-                        break;
-                    case 9997:
-                        logger.error("Node: Registration failed. Bootstrap table is full.");
-                        break;
-                    case "ERROR":
-                        logger.error("Node: Invalid Registration Command.");
-                        break;
-                }
-                shutdown(1);
-            }
-        });
+                        // NOTE: check all nodes after 5 seconds
+                        heartBeatAndDiscover();
+
+                    } else {
+                        switch (error) {
+                            case 9999:
+                                logger.error("Node: Registration failed. Entry already in the table.");
+                                break;
+                            case 9998:
+                                logger.error("Node: Registration failed. Invalid IP, Port or Username.");
+                                break;
+                            case 9997:
+                                logger.error("Node: Registration failed. Bootstrap table is full.");
+                                break;
+                            case "ERROR":
+                                logger.error("Node: Invalid Registration Command.");
+                                break;
+                        }
+                        shutdown(1);
+                    }
+                });
+            });
+
+
+        }, 500);
     });
-
 }
 
 /**
