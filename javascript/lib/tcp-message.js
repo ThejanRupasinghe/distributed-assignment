@@ -27,7 +27,7 @@ module.exports.sendMessage = (message, cb) => {
 
     client.on('data', (data) => {
         logger.wire('TCP : Received - ' + data);
-        if (cb) cb(data);
+        if (cb) cb(data.toString());
         client.destroy(); // kill client after server's response
     });
 };

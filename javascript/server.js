@@ -41,7 +41,7 @@ let argv = minimist(process.argv.slice(2));
 
 // init according to argv
 if (argv.port) {
-    myNode.port = argv.port;
+    myNode.port = parseInt(argv.port);
 }
 if (argv.name) {
     myNode.name = argv.name;
@@ -113,7 +113,8 @@ if (bsNode) {
                                     routingTable[k] = node;
                                     logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                                 } else {
-                                    logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
+                                    // TODO : implement scenario- more than 4 nodes, connecting to random 2 was not success
+                                    logger.error("Node : Error in joining, Node - " + node.ip + ":" + node.port);
                                 }
                             }
                         });
@@ -159,8 +160,11 @@ function heartBeatAndDiscover() {
                 if (err !== null) {
                     // This node has failed
                     logger.error("Node:", nodeKey, 'is dead');
+                    let deletingNode = routingTable[nodeKey];
                     delete routingTable[nodeKey];  // remove from my routing table
+                    logger.info("Node: Removed from routing table - " + deletingNode.ip + ":" + deletingNode.port);
 
+                    /* Found node will not unreg dead one from BS
                     // inform bootstrap server
                     let unregMsg = msgParser.generateUNREG({
                         ip: node.ip, port: node.port, name: nodeKey
@@ -172,6 +176,7 @@ function heartBeatAndDiscover() {
                     tcp.sendMessage(unregMsg, (receivedMsg) => {
                         logger.ok('Node: Inform Bootstrap server about the missing node');
                     })
+                     */
                 } else {
                     logger.hb("Node:", nodeKey, 'is LIVE');
                 }
@@ -198,13 +203,13 @@ function discover() {
     udp.send(discSendNode, {type: msgParser.DISC, node: myNode}, (res, err) => {
         // connect here
         // if the given one is not myNode or not in my routing table add
-        if (res.body && !routingTable[res.body.node.name] && res.body.node.name !== myNode.name) {
-            // if (!((res.body.node.name in routingTable) || (res.body.node.name === myNode.name))) {
+        if (res.body && !routingTable[res.body.node.ip + ":" + res.body.node.port] && ((res.body.node.ip !== myNode.ip) || (res.body.node.port !== myNode.port))) {
+            // if (!((res.body.node.ip in routingTable) || (res.body.node.ip === myNode.ip))) {
             udp.send(res.body.node, {type: msgParser.JOIN, node: myNode}, (res1, err) => {
                 if (err === null) {
                     let node = res1.body.node;
                     if (res1.body.success) {
-                        routingTable[res.body.node.name] = node;
+                        routingTable[res.body.node.ip + ":" + res.body.node.port] = node;
                         logger.info("Node: Added to routing table - " + node.ip + ":" + node.port);
                     } else {
                         logger.error("Node: Error in joining, Node - " + node.ip + ":" + node.port);
@@ -252,15 +257,17 @@ function shutdown(error) {
                     // LEAVE_OK from everyone and then UNREG
                     if (leaveCount === totalRoutingTableCount) {
                         // inform to bootstrap server
-                        let unregMsg = msgParser.generateUNREG({
-                            ip: myNode.ip, port: myNode.port, name: myNode.name
-                        });
+                        let unregMsg = msgParser.generateUNREG(myNode);
+
                         tcp.init(bsNode.ip, bsNode.port, (error) => {
                             logger.error(error);
                         });
+
                         tcp.sendMessage(unregMsg, (receivedMsg) => {
-                            logger.ok("Node: Leaving");
-                            process.exit(0);
+                            if (msgParser.parseUNREGOK(receivedMsg) === 0) {
+                                logger.ok("Node: Leaving");
+                                process.exit(0);
+                            }
                         });
                     }
 
@@ -293,7 +300,7 @@ function udpStart() {
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {
             case msgParser.JOIN: // name, address
-                routingTable[body.node.name] = {
+                routingTable[body.node.ip + ":" + body.node.port] = {
                     ip: body.node.ip,
                     port: body.node.port
                 };
@@ -313,7 +320,7 @@ function udpStart() {
                 break;
 
             case msgParser.LEAVE:
-                delete routingTable[body.node.name];
+                delete routingTable[body.node.ip + ":" + body.node.port];
                 logger.info("Node: Removed from routing table - " + body.node.ip + ":" + body.node.port);
 
                 res.send({type: msgParser.LEAVE_OK, success: true});
@@ -339,15 +346,6 @@ function udpStart() {
                 }
                 logger.ok("Hop Count - " + body.hopCount + "\n----------------------------");
                 break;
-            case 'delete':
-                if (routingTable[msg.name]) {
-                    delete routingTable[msg.name];
-                }
-                res.end();
-                break;
-            case 'force-delete':
-                // call exit
-                break;
         }
     });
 }
@@ -357,17 +355,6 @@ function udpStart() {
  */
 function cliStart() {
     cli.init({
-        'delete': () => {
-            let count = 0;
-            Object.keys(routingTable).forEach(k => {
-                udp.send(routingTable[k], 'delete', {name: name}, () => {
-                    count += 1;
-                    if (count === Object.keys(routingTable).length) {
-                        process.exit();
-                    }
-                });
-            });
-        },
         'at': () => {
             logger.print('My address table: ');
             Object.keys(routingTable).forEach(a => {
@@ -504,7 +491,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
                 }
             }
 
-            logger.info("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port + " " + nextNode.name);
+            logger.info("Node: Picked Search Node - " + nextNode.ip + ":" + nextNode.port);
 
             if (hopCount === MAX_HOP_COUNT) {
                 let data = {
