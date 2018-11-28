@@ -3,6 +3,7 @@ const sha256 = require('sha256');
 const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
+const os = require('os');
 
 const fileNames = [
     "Adventures of Tintin",
@@ -73,7 +74,8 @@ let verifyHash = (data, givenHash) => {
  * @param fileName file name
  */
 let writeToFile = (data, fileName) => {
-    let filePath = path.join(__dirname, '..', 'downloaded_files', fileName + ".txt");
+    // let filePath = path.join(__dirname, '..', 'downloaded_files', fileName + ".txt");
+    let filePath = path.join(os.homedir(), "Downloads", fileName + ".txt");
     fs.writeFile(filePath, data, function (err) {
         if (err) {
             logger.error("FileController: Error occurred in writing file.");

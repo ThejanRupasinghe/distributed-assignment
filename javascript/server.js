@@ -394,12 +394,16 @@ function cliStart() {
 
                     request({method: 'GET', url: 'http://' + ip + ':' + (port + 5) + '/get-file/' + fileName},
                         (err, response, body) => {
-                            let jsonBody = JSON.parse(body);
-                            if (jsonBody.file === 'NOT FOUND') {
-                                logger.error("Node: File not found on the requested node.")
+                            if (err) {
+                                logger.error("Node: Error in file downloading.");
                             } else {
-                                if (fileController.verifyHash(jsonBody.file, jsonBody.hash)) {
-                                    fileController.writeToFile(jsonBody.file.data, fileName)
+                                let jsonBody = JSON.parse(body);
+                                if (jsonBody.file === 'NOT FOUND') {
+                                    logger.error("Node: File not found on the requested node.")
+                                } else {
+                                    if (fileController.verifyHash(jsonBody.file, jsonBody.hash)) {
+                                        fileController.writeToFile(jsonBody.file.data, fileName)
+                                    }
                                 }
                             }
                         });
