@@ -45,7 +45,7 @@ const init = (port, routingTable, myNode, files) => {
 
         if (ttl === 0) { // if ttl is 0, this is end node. so send the data from its routing table
             let tbl = {};
-            tbl[myNode.name] = Object.keys(routingTable);
+            tbl[myNode.ip+":"+myNode.port] = Object.keys(routingTable);
             res.jsonp({rTable: tbl});
         } else { // this is middle node. it has to collect data from its neighbours
             let count = 0;
@@ -98,7 +98,7 @@ const init = (port, routingTable, myNode, files) => {
                 let nodeCon = tbl[node];
                 nodeCon.forEach(con => {
                     let conStr = {from: node, to: con};
-                    if (!(tableArray.some(e => (e.from === con && e.to === node)))){
+                    if (!(tableArray.some(e => (e.from === con && e.to === node)))) {
                         tableArray.push(conStr);
 
                     }
@@ -140,14 +140,14 @@ const createConnectionGraph = (routingTable, cb) => {
             });
 
             if (count === keys.length) { // grab all responses
-                let x = JSON.parse(JSON.stringify(tbl).replace(/node_/g, ''));
-                let nodes = Object.keys(x).sort();
+                // let x = JSON.parse(JSON.stringify(tbl).replace(/node_/g, ''));
+                let nodes = Object.keys(tbl).sort();
 
                 nodes.forEach(p => {
                     let line = [];
                     nodes.forEach(q => {
                         line.push(
-                            x[p].indexOf(q) >= 0 ? '1' : '0'
+                            tbl[p].indexOf(q) >= 0 ? '1' : '0'
                         );
                     });
                     console.log(line.join(', '));
