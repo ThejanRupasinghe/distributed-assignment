@@ -56,7 +56,7 @@ module.exports.parseREGOK = (response, cb) => {
                 break;
             default:
                 for (let i = 3; i <= noOfNodes * 3; i += 3) {
-                    nodes[responseArr[i]+":"+responseArr[i+1]] = {
+                    nodes[responseArr[i] + ":" + responseArr[i + 1]] = {
                         ip: responseArr[i],
                         port: parseInt(responseArr[i + 1])
                     };
@@ -201,9 +201,9 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
         udpStream.body.node.port = msgReceiveArr[4];
         let searchString = "";
         for (let i = 5; i < msgReceiveArr.length - 1; i++) {
-            searchString += msgReceiveArr[i].toString();
+            searchString += msgReceiveArr[i].toString() + " ";
         }
-        udpStream.body["searchString"] = searchString;
+        udpStream.body["searchString"] = searchString.trim();
         udpStream.body["hopCount"] = msgReceiveArr[msgReceiveArr.length - 1];
     } else if (SER_OK === operation) {
         udpStream.type = REQ;

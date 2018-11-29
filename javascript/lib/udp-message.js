@@ -3,6 +3,7 @@ const udpServer = dgram.createSocket('udp4');
 const msgParser = require('./message-parser');
 const logger = require('./logger');
 const uuid = require('uuid/v1');
+const results = require('./results-collector');
 
 udpServer.on('listening', () => {
     logger.info("UDP : UDP Server is listening.....");
@@ -15,6 +16,7 @@ module.exports.init = (port, cb) => {
 
     udpServer.on('message', (msgStream, rinfo) => {
         logger.wire("UDP : Received - " + msgStream.toString() + " - " + rinfo.address + ":" + rinfo.port);
+        results.plusUdpReceivedMsg();
 
         const udpStream = msgParser.parseUDPMsg(msgStream.toString(), rinfo);
 
@@ -25,6 +27,7 @@ module.exports.init = (port, cb) => {
             const ack = msgParser.generateUDPMsg({body: {type: msgParser.ACK, ok: 1}, id: udpStream.id}); // create the acknowledgement
             udpServer.send(ack, 0, ack.length, rinfo.port, rinfo.address);     // send ack
             logger.wire("UDP : Sent - " + ack + " - " + rinfo.address + ":" + rinfo.port);
+            results.plusUdpSentMsg();
 
             const request = {  // create request object
                 body: udpStream.body,
@@ -42,6 +45,7 @@ module.exports.init = (port, cb) => {
                     // send the results TODO add ack if necessary (then the version will be added)
                     udpServer.send(resString, 0, resString.length, rinfo.port, rinfo.address);
                     logger.wire("UDP : Sent - " + resString + " - " + rinfo.address + ":" + rinfo.port);
+                    results.plusUdpSentMsg();
                 }
             };
 
@@ -101,6 +105,7 @@ module.exports.send = (target, data, cb) => {
         });
 
         logger.wire("UDP : Sent - " + msg_send + " - " + target.ip + ":" + target.port);
+        results.plusUdpSentMsg();
     };
 
     // put an interval to send the message until get an acknowledgement
