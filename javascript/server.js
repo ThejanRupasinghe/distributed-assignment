@@ -348,7 +348,6 @@ function udpStart() {
                 break;
 
             case msgParser.SER:
-                //TODO: complete
                 search(body.searchString,
                     {ip: body.node.ip, port: body.node.port},
                     parseInt(body.hopCount),
@@ -356,7 +355,6 @@ function udpStart() {
                 break;
 
             case msgParser.SER_OK:
-                //TODO: complete
                 logger.ok("Node: Search Results\n----------------------------");
                 logger.ok("From - " + body.node.ip + ":" + body.node.port);
                 let fileNames = body.fileNames;
@@ -392,7 +390,7 @@ function cliStart() {
             // search command = search "hello world"
             let searchString = params['_'][1];
 
-            search(searchString, myNode, 0, null);
+            search(searchString, null, 0, null);
         },
         'files': () => {
             logger.print(files);
@@ -434,9 +432,11 @@ function cliStart() {
                 }
             }
         },
-
         'exit': () => {
             shutdown(0);
+        },
+        'search-test': () => {
+            results.searchTest();
         }
     });
 }
@@ -470,9 +470,13 @@ function pickFiles() {
  * @param requestNode: node which requested this search from my node
  *
  */
-function search(searchString, searchNode, hopCount, requestNode) {
+const search = (searchString, searchNode, hopCount, requestNode) => {
 
     results.plusIssuedSearches();
+
+    if (searchNode == null) {
+        searchNode = myNode;
+    }
 
     let found = false;
 
@@ -569,4 +573,6 @@ function search(searchString, searchNode, hopCount, requestNode) {
             });
         }
     }
-}
+};
+
+module.exports ={search};
