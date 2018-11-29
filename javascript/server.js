@@ -357,7 +357,9 @@ function udpStart() {
                 break;
 
             case msgParser.SER_OK:
-                logger.warning("Search Time : " + (new Date().getTime() - searchTime) + " ms");
+                let timeTaken = new Date().getTime() - searchTime;
+                logger.warning("Search Time : " + timeTaken + " ms");
+                results.addTotalSearchTime(timeTaken);
                 logger.ok("Node: Search Results\n----------------------------");
                 logger.ok("From - " + body.node.ip + ":" + body.node.port);
                 let fileNames = body.fileNames;
@@ -510,7 +512,9 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
     if (resultFileNames.length !== 0) {
         found = true;
         logger.info("Node: Search - " + searchString + " - Results - " + resultFileNames);
-        logger.warning("Search Time : " + (new Date().getTime() - searchTime) + " ms");
+        let timeTaken = new Date().getTime() - searchTime;
+        logger.warning("Search Time : " + timeTaken + " ms");
+        results.addTotalSearchTime(timeTaken);
         results.plusSuccessSearches();
     } else {
         logger.info("Node: Search - " + searchString + " - not found.")

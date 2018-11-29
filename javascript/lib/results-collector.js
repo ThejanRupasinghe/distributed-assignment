@@ -83,6 +83,8 @@ module.exports.printSearchStats = () => {
     logger.ok("Success Searches : " + noOfSuccessSearches);
     logger.ok("Failed Searches : " + noOfFailedSearches);
     logger.ok("Average Hop Count : " + parseInt(totalHopCount / noOfIssuedSearches));
+    logger.ok("Total Search Time : " + totalSearchTime + " ms");
+    logger.ok("Average Search Time : " + parseInt(totalSearchTime/noOfIssuedSearches) + " ms");
     logger.ok("----------------------------");
 };
 
