@@ -73,7 +73,6 @@ module.exports.searchTest = () => {
                 noOfIssuedSearches++;
             });
         }
-
     });
 };
 
@@ -113,4 +112,33 @@ module.exports.resetMsgStats = () => {
     noOfTcpSentMsgs = 0;
     noOfTcpReceivedMsgs = 0;
     logger.info("RESULTS: Message Stat reset.");
+};
+
+module.exports.searchLatencyTest = () => {
+    // let filePath = path.join(__dirname, 'resources', "queries.txt");
+    let filePath = path.join(os.homedir(), "Downloads", "queries.txt");
+
+    let queries;
+
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            logger.error("Results: Error in reading file.");
+        } else {
+            queries = data.toString().replace(/\r/g, '').split("\n");
+
+            let index = 0;
+            const myFunction = () => {
+                index ++;
+                if (index > queries.length) {
+                    return
+                }
+
+                let tempQuery = "\"" + queries[index] + "\"";
+                nodeServer.search(tempQuery, null, 0, null);
+
+                setTimeout(myFunction, 10000);
+            };
+            myFunction();
+        }
+    });
 };

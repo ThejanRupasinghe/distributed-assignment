@@ -450,6 +450,9 @@ function cliStart() {
         },
         'reset-msg': () => {
             results.resetMsgStats();
+        },
+        'search-latency': () => {
+            results.searchLatencyTest();
         }
     });
 }
