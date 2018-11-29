@@ -370,7 +370,7 @@ function udpStart() {
                     logger.ok("Files - " + fileNames);
                     results.plusSuccessSearches();
                 }
-                results.addHopCount(body.hopCount);
+                results.addHopCount(parseInt(body.hopCount));
                 logger.ok("Hop Count - " + body.hopCount + "\n----------------------------");
                 break;
         }
@@ -396,7 +396,6 @@ function cliStart() {
             let searchString = params['_'][1];
 
             search(searchString, null, 0, null);
-            results.plusIssuedSearches();
         },
         'files': () => {
             logger.print(files);
@@ -499,6 +498,7 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
     if (searchNode == null) {
         searchNode = myNode;
         searchTime = new Date().getTime();
+        results.plusIssuedSearches();
     }
 
     let found = false;
