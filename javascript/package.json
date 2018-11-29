@@ -2,7 +2,7 @@
   "name": "distributed",
   "version": "1.0.0",
   "description": "",
-  "main": "http/server.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -14,6 +14,7 @@
     "express": "^4.16.3",
     "ip": "^1.1.5",
     "minimist": "^1.2.0",
+    "pkg": "^4.3.4",
     "readline-async": "github:dannynemer/readline-async",
     "request": "^2.88.0",
     "sha256": "^0.2.0",

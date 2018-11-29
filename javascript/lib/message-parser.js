@@ -56,9 +56,9 @@ module.exports.parseREGOK = (response, cb) => {
                 break;
             default:
                 for (let i = 3; i <= noOfNodes * 3; i += 3) {
-                    nodes[responseArr[i + 2]] = {
+                    nodes[responseArr[i]+":"+responseArr[i+1]] = {
                         ip: responseArr[i],
-                        port: parseInt(responseArr[i + 1]),
+                        port: parseInt(responseArr[i + 1])
                     };
                 }
                 cb(nodes, noOfNodes, null);
@@ -80,7 +80,7 @@ module.exports.generateUNREG = (node) => {
 };
 
 module.exports.parseUNREGOK = (response) => {
-    let responseArr = response.split(" ");
+    let responseArr = response.toString().split(" ");
 
     let status = responseArr[1];
 
@@ -109,9 +109,9 @@ module.exports.generateUDPMsg = (msgSend) => {
 
     // TODO: implement other types - SEARCH
     if (JOIN === msgSend.body.type) {
-        message += JOIN + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " " + msgSend.body.node.name;
+        message += JOIN + " " + msgSend.body.node.ip + " " + msgSend.body.node.port;
     } else if (LEAVE === msgSend.body.type) {
-        message += LEAVE + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " " + msgSend.body.node.name;
+        message += LEAVE + " " + msgSend.body.node.ip + " " + msgSend.body.node.port;
     } else if (ACK === msgSend.body.type) {
         message += ACK;
     } else if (JOIN_OK === msgSend.body.type) {
@@ -133,7 +133,7 @@ module.exports.generateUDPMsg = (msgSend) => {
     } else if (DISC === msgSend.body.type) {
         message += DISC + ' 1';
     } else if (DISC_OK === msgSend.body.type) {
-        message += DISC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port + ' ' + msgSend.body.node.name;
+        message += DISC_OK + ' 1 ' + msgSend.body.node.ip + ' ' + msgSend.body.node.port;
     } else if (SER === msgSend.body.type) {
         message += SER + " " + msgSend.body.node.ip + " " + msgSend.body.node.port + " \"" + msgSend.body.searchString + "\" " + msgSend.body.hopCount;
     } else if (SER_OK === msgSend.body.type) {
@@ -172,8 +172,7 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
     if (JOIN === operation || LEAVE === operation) {
         udpStream.type = REQ;
         udpStream.body.node.ip = msgReceiveArr[3];
-        udpStream.body.node.port = msgReceiveArr[4];
-        udpStream.body.node.name = msgReceiveArr[5];
+        udpStream.body.node.port = parseInt(msgReceiveArr[4]);
     } else if (ACK === operation) {
         udpStream.type = ACK;
     } else if (JOIN_OK === operation || LEAVE_OK === operation) {
@@ -195,8 +194,7 @@ module.exports.parseUDPMsg = (msgReceive, rinfo) => {
     } else if (DISC_OK === operation) {
         udpStream.type = RES;
         udpStream.body.node.ip = msgReceiveArr[4];
-        udpStream.body.node.port = msgReceiveArr[5];
-        udpStream.body.node.name = msgReceiveArr[6];
+        udpStream.body.node.port = parseInt(msgReceiveArr[5]);
     } else if (SER === operation) {
         udpStream.type = REQ;
         udpStream.body.node.ip = msgReceiveArr[3];
