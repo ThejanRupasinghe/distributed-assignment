@@ -21,6 +21,8 @@ const MAX_FILE_SIZE = 10;
 const MIN_FILE_SIZE = 2;
 const MAX_HOP_COUNT = 10;
 
+let searchTime;
+
 // stores local ip and default port, later adds name
 let myNode = {
     ip: ipLib.address(),
@@ -355,6 +357,7 @@ function udpStart() {
                 break;
 
             case msgParser.SER_OK:
+                logger.warning("Search Time : " + (new Date().getTime() - searchTime) + " ms");
                 logger.ok("Node: Search Results\n----------------------------");
                 logger.ok("From - " + body.node.ip + ":" + body.node.port);
                 let fileNames = body.fileNames;
@@ -493,6 +496,7 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
 
     if (searchNode == null) {
         searchNode = myNode;
+        searchTime = new Date().getTime();
     }
 
     let found = false;
@@ -506,6 +510,7 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
     if (resultFileNames.length !== 0) {
         found = true;
         logger.info("Node: Search - " + searchString + " - Results - " + resultFileNames);
+        logger.warning("Search Time : " + (new Date().getTime() - searchTime) + " ms");
         results.plusSuccessSearches();
     } else {
         logger.info("Node: Search - " + searchString + " - not found.")

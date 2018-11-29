@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
 const logger = require('./logger');
 const os = require('os');
 const nodeServer = require('../server');
@@ -18,6 +17,7 @@ let noOfSuccessSearches = 0;
 let noOfFailedSearches = 0;
 
 let totalHopCount = 0;
+let totalSearchTime = 0;
 
 module.exports.plusUdpReceivedMsg = () => {
     noOfUdpReceivedMsgs++;
@@ -128,7 +128,7 @@ module.exports.searchLatencyTest = () => {
 
             let index = 0;
             const myFunction = () => {
-                index ++;
+                index++;
                 if (index > queries.length) {
                     return
                 }
@@ -141,4 +141,8 @@ module.exports.searchLatencyTest = () => {
             myFunction();
         }
     });
+};
+
+module.exports.addTotalSearchTime = (searchTime) => {
+    totalSearchTime += searchTime;
 };
