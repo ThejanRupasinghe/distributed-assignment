@@ -11,6 +11,7 @@ const fileController = require('./lib/file-controller');
 const MusicFile = require('./lib/music-file');
 const httpServer = require('./lib/http-server');
 const request = require('request');
+const results = require('./lib/results-collector');
 
 // server constants
 const HEART_BEAT_TIME_OUT = 5000; // 5 seconds;
@@ -360,10 +361,13 @@ function udpStart() {
                 logger.ok("From - " + body.node.ip + ":" + body.node.port);
                 let fileNames = body.fileNames;
                 if (fileNames.length === 0) {
-                    logger.warning("NO FILES FOUND.")
+                    logger.warning("NO FILES FOUND.");
+                    results.plusFailedSearches();
                 } else {
                     logger.ok("Files - " + fileNames);
+                    results.plusSuccessSearches();
                 }
+                results.addHopCount(body.hopCount);
                 logger.ok("Hop Count - " + body.hopCount + "\n----------------------------");
                 break;
         }
@@ -467,7 +471,8 @@ function pickFiles() {
  *
  */
 function search(searchString, searchNode, hopCount, requestNode) {
-    //TODO: implement
+
+    results.plusIssuedSearches();
 
     let found = false;
 
@@ -480,6 +485,7 @@ function search(searchString, searchNode, hopCount, requestNode) {
     if (resultFileNames.length !== 0) {
         found = true;
         logger.info("Node: Search - " + searchString + " - Results - " + resultFileNames);
+        results.plusSuccessSearches();
     } else {
         logger.info("Node: Search - " + searchString + " - not found.")
     }

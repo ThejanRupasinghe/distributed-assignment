@@ -6,6 +6,12 @@ let noOfTcpMsgs = 0;
 let noOfTcpSentMsgs = 0;
 let noOfTcpReceivedMsgs = 0;
 
+let noOfIssuedSearches = 0;
+let noOfSuccessSearches = 0;
+let noOfFailedSearches = 0;
+
+let totalHopCount = 0;
+
 module.exports.plusUdpReceivedMsg = () => {
     noOfUdpReceivedMsgs++;
     noOfUdpMsgs++;
@@ -22,6 +28,26 @@ module.exports.plusTcpSentMsg = () => {
 };
 
 module.exports.plusTcpReceivedMsg = () => {
-    noOfTcpReceivedMsgs;
+    noOfTcpReceivedMsgs++;
     noOfTcpMsgs++;
 };
+
+module.exports.plusIssuedSearches = () => {
+    noOfIssuedSearches++;
+};
+
+module.exports.plusIssuedSearches = () => {
+    noOfIssuedSearches++;
+};
+
+module.exports.plusSuccessSearches = () => {
+    noOfSuccessSearches++;
+};
+
+module.exports.plusFailedSearches = () => {
+    noOfFailedSearches++;
+};
+
+module.exports.addHopCount = (hopCount) => {
+   totalHopCount+=hopCount;
+} ;
