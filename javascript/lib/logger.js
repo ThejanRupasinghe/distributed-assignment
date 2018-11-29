@@ -1,3 +1,16 @@
+const winston = require('winston');
+
+const logger = winston.createLogger({
+    format: winston.format.combine(
+        winston.format.printf((info) => {
+            return `${info.message}`;
+        })),
+    transports: [
+        new winston.transports.File({filename: 'error.log', level: 'error'}),
+        new winston.transports.File({filename: 'full-log.log'})
+    ]
+});
+
 let FgRed = "\x1b[31m",
     FgYellow = "\x1b[33m",
     FgCyan = "\x1b[36m",
@@ -29,68 +42,76 @@ let active = {
 
 const methods = {
     print: (...str) => {
+        str.unshift(printPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.print) {
-            str.unshift(printPrefix);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     error: (...str) => {
+        str.unshift(errorPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.error) {
-            str.unshift(errorPrefix);
             str.unshift(FgRed);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     warning: (...str) => {
+        str.unshift(warningPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.warning) {
-            str.unshift(warningPrefix);
             str.unshift(FgYellow);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     info: (...str) => {
+        str.unshift(infoPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.info) {
-            str.unshift(infoPrefix);
             str.unshift(FgCyan);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     ok: (...str) => {
+        str.unshift(okPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.ok) {
-            str.unshift(okPrefix);
             str.unshift(FgGreen);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     wire: (...str) => {
+        str.unshift(wirePrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.wire) {
-            str.unshift(wirePrefix);
             str.unshift(FgMagenta);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     debug: (...str) => {
+        str.unshift(debugPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.debug) {
-            str.unshift(debugPrefix);
             str.unshift(FgWhite);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
     hb: (...str) => {
+        str.unshift(hbPrefix);
+        logger.log({level: 'info', message: str.join(' ')});
         if (active.hb) {
-            str.unshift(hbPrefix);
             str.unshift(FgYellow);
             str.push(Reset);
             console.log.apply(console, Array.prototype.slice.call(str));
         }
     },
-    activate: (logLevel)=>{
+    activate: (logLevel) => {
         active[logLevel] = true;
     },
 };

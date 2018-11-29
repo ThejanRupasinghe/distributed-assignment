@@ -60,7 +60,7 @@ const init = (port, routingTable, myNode, files) => {
                 // send the request to its neighbours with ttl - 1
                 request({
                         method: 'GET',
-                        url: 'http://' + routingTable[k]['ip'] + ':' + (parseInt(routingTable[k]['port']) + 5)
+                        url: 'http://' + k + ':' + (parseInt(routingTable[k]) + 5)
                             + '/con-graph?' + queryString
                     },
                     (err, response, body) => {
@@ -141,7 +141,7 @@ const createConnectionGraph = (routingTable, cb) => {
 
             if (count === keys.length) { // grab all responses
                 // let x = JSON.parse(JSON.stringify(tbl).replace(/node_/g, ''));
-                let nodes = Object.keys(tbl).sort();
+                let nodes = Object.keys(x).sort();
 
                 nodes.forEach(p => {
                     let line = [];
