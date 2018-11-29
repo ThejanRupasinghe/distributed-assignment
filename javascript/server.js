@@ -391,6 +391,7 @@ function cliStart() {
             let searchString = params['_'][1];
 
             search(searchString, null, 0, null);
+            results.plusIssuedSearches();
         },
         'files': () => {
             logger.print(files);
@@ -437,6 +438,18 @@ function cliStart() {
         },
         'search-test': () => {
             results.searchTest();
+        },
+        'search-stats': () => {
+            results.printSearchStats();
+        },
+        'reset-search': () => {
+            results.resetSearchStats();
+        },
+        'msg-stats': () => {
+            results.printMsgStats();
+        },
+        'reset-msg': () => {
+            results.resetMsgStats();
         }
     });
 }
@@ -472,7 +485,8 @@ function pickFiles() {
  */
 const search = (searchString, searchNode, hopCount, requestNode) => {
 
-    results.plusIssuedSearches();
+    // searches that went through me
+    // results.plusIssuedSearches();
 
     if (searchNode == null) {
         searchNode = myNode;
@@ -575,4 +589,4 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
     }
 };
 
-module.exports ={search};
+module.exports.search = search;

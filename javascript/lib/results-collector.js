@@ -43,10 +43,6 @@ module.exports.plusIssuedSearches = () => {
     noOfIssuedSearches++;
 };
 
-module.exports.plusIssuedSearches = () => {
-    noOfIssuedSearches++;
-};
-
 module.exports.plusSuccessSearches = () => {
     noOfSuccessSearches++;
 };
@@ -63,8 +59,6 @@ module.exports.searchTest = () => {
     // let filePath = path.join(__dirname, 'resources', "queries.txt");
     let filePath = path.join(os.homedir(), "Downloads", "queries.txt");
 
-    console.log(filePath);
-
     let queries;
 
     fs.readFile(filePath, (err, data) => {
@@ -74,10 +68,49 @@ module.exports.searchTest = () => {
             queries = data.toString().replace(/\r/g, '').split("\n");
 
             queries.forEach(query => {
-                nodeServer.search(query,null,0,null);
+                let tempQuery = "\"" + query + "\"";
+                nodeServer.search(tempQuery, null, 0, null);
+                noOfIssuedSearches++;
             });
         }
 
     });
+};
 
+module.exports.printSearchStats = () => {
+    logger.ok("RESULTS: SEARCH STATS");
+    logger.ok("----------------------------");
+    logger.ok("Issued Searches : " + noOfIssuedSearches);
+    logger.ok("Success Searches : " + noOfSuccessSearches);
+    logger.ok("Failed Searches : " + noOfFailedSearches);
+    logger.ok("Average Hop Count : " + parseInt(totalHopCount / noOfIssuedSearches));
+    logger.ok("----------------------------");
+};
+
+module.exports.resetSearchStats = () => {
+    noOfIssuedSearches = 0;
+    noOfFailedSearches = 0;
+    noOfSuccessSearches = 0;
+    logger.info("RESULTS: Search Stat reset.");
+};
+
+module.exports.printMsgStats = () => {
+    logger.ok("RESULTS: MSG STATS");
+    logger.ok("----------------------------");
+    logger.ok("Sent UDP : " + noOfUdpSentMsgs);
+    logger.ok("Received UDP : " + noOfUdpReceivedMsgs);
+    logger.ok("----------------------------");
+    logger.ok("Sent TCP : " + noOfTcpSentMsgs);
+    logger.ok("Received TCP : " + noOfTcpReceivedMsgs);
+    logger.ok("----------------------------");
+};
+
+module.exports.resetMsgStats = () => {
+    noOfUdpMsgs = 0;
+    noOfUdpSentMsgs = 0;
+    noOfUdpReceivedMsgs = 0;
+    noOfTcpMsgs = 0;
+    noOfTcpSentMsgs = 0;
+    noOfTcpReceivedMsgs = 0;
+    logger.info("RESULTS: Message Stat reset.");
 };
