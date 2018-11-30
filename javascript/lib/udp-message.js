@@ -5,13 +5,18 @@ const logger = require('./logger');
 const uuid = require('uuid/v1');
 const results = require('./results-collector');
 
+let requestLatency = 500;
+let exponential = 0;
+
 udpServer.on('listening', () => {
     logger.info("UDP : UDP Server is listening.....");
 });
 
 const responseHandlersMap = {};
 
-module.exports.init = (port, cb) => {
+module.exports.init = (port, reqLate, exp, cb) => {
+    requestLatency = reqLate;
+    exponential = exp;
     udpServer.bind(port);
 
     udpServer.on('message', (msgStream, rinfo) => {
@@ -101,7 +106,7 @@ module.exports.send = (target, data, cb) => {
             };
             timeoutRef = setTimeout(() => {
                 return fn();
-            }, 500); //TODO: MUST THINK ABOUT THE TIMEOUT PERIOD
+            }, requestLatency * Math.pow(version, exponential));
         });
 
         logger.wire("UDP : Sent - " + msg_send + " - " + target.ip + ":" + target.port);

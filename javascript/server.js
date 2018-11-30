@@ -19,7 +19,10 @@ const MAX_FILES_PER_NODE = 5;
 const MIN_FILES_PER_NODE = 3;
 const MAX_FILE_SIZE = 10;
 const MIN_FILE_SIZE = 2;
-const MAX_HOP_COUNT = 10;
+let MAX_HOP_COUNT = 10;
+
+let requestLatency = 500;
+let exponential = 0;
 
 let searchTime;
 
@@ -54,6 +57,18 @@ if (argv.bsIP && argv.bsPort) {
     bsNode = {};
     bsNode.ip = argv.bsIP;
     bsNode.port = argv.bsPort;
+}
+
+if(argv.hopCount) {
+    MAX_HOP_COUNT = argv.hopCount;
+}
+
+if(argv.reqLatency) {
+    requestLatency = argv.reqLatency;
+}
+
+if(argv.reqExp) {
+    exponential = argv.reqExp;
 }
 
 // activates debug, wire and heartbeat logs
@@ -318,7 +333,7 @@ function start() {
  * Starts UDP listener. Requests hit here. Each case to handle each type of request.
  */
 function udpStart() {
-    udp.init(myNode.port, (req, res) => {
+    udp.init(myNode.port, requestLatency, exponential, (req, res) => {
         let body = req.body;
         // logger.info('- incoming message', JSON.stringify(body));
         switch (body['type']) {

@@ -13,6 +13,10 @@ const request = require('request');
  */
 const init = (port, routingTable, myNode, files) => {
 
+    app.get('/', (req, res) => {
+        res.send('Http Server is working');
+    });
+
     //file sending mechanism
     app.get('/get-file/:query', (req, res) => {
 

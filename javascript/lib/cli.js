@@ -9,6 +9,9 @@ module.exports.init = (commands) => {
     commands.cls = () => {
         console.log('\033[2J');
     };
+    commands.help = () => {
+        console.log(Object.keys(commands));
+    };
 
     stdin.addListener('data', (d) => {
         d = d.toString().trim().split(/ +(?=(?:(?:[^"]*"){2})*[^"]*$)/g);
