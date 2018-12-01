@@ -510,6 +510,7 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
     // searches that went through me
     // results.plusIssuedSearches();
 
+    // my node issued the search
     if (searchNode == null) {
         searchNode = myNode;
         searchTime = new Date().getTime();
@@ -527,10 +528,15 @@ const search = (searchString, searchNode, hopCount, requestNode) => {
     if (resultFileNames.length !== 0) {
         found = true;
         logger.info("Node: Search - " + searchString + " - Results - " + resultFileNames);
-        let timeTaken = new Date().getTime() - searchTime;
-        logger.warning("Search Time : " + timeTaken + " ms");
-        results.addTotalSearchTime(timeTaken);
-        results.plusSuccessSearches();
+
+        // my node issued the search
+        if (searchNode === myNode) {
+            let timeTaken = new Date().getTime() - searchTime;
+            logger.warning("Search Time : " + timeTaken + " ms");
+            results.addTotalSearchTime(timeTaken);
+            results.plusSuccessSearches();
+        }
+
     } else {
         logger.info("Node: Search - " + searchString + " - not found.")
     }
