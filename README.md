@@ -5,11 +5,14 @@
     * Run ``./a.out <port_number>`` eg: ``./a.out 5050``
     
 2. Start Node servers (server.js)
-    * Command line arguments
+    * Install [Node.js](https://nodejs.org/en/)
+    * Run ``npm install``.
+    * Start node servers with command line arguments
         * ``bsIP`` - IP of the bootstrap server
         * ``bsPort`` - Port of the bootstrap server
         * ``name`` - name of the node in the format 'node_001'
         * ``port`` - server port
+        * ``hopCount`` - max hop count in random search
         * ``wire`` - enables wire logs
         * ``debug`` - enable debug logs
     * eg: ``node server.js --bsIP=127.0.0.1 --bsPort=5050 --name=node_001 --port=4000``
@@ -31,5 +34,4 @@
 * Help to create servers.
 * Please make sure to edit the $DIR variable to your working dir.
 * If not execute use ``chmod +x run.sh && ./run.sh``
-
 
