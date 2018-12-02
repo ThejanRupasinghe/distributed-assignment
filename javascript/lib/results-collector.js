@@ -93,6 +93,8 @@ module.exports.resetSearchStats = () => {
     noOfIssuedSearches = 0;
     noOfFailedSearches = 0;
     noOfSuccessSearches = 0;
+    totalSearchTime = 0;
+    totalHopCount = 0;
     logger.info("RESULTS: Search Stat reset.");
 };
 
@@ -137,7 +139,11 @@ module.exports.searchLatencyTest = () => {
                 }
 
                 let tempQuery = "\"" + queries[index] + "\"";
-                nodeServer.search(tempQuery, null, 0, null);
+                // tempQuery = "undefined";
+
+                if (tempQuery !== "\"undefined\"") {
+                    nodeServer.search(tempQuery, null, 0, null);
+                }
 
                 setTimeout(myFunction, 10000);
             };

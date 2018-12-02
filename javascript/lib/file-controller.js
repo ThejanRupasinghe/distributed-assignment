@@ -9,7 +9,7 @@ const fileNames = [
     "Adventures of Tintin",
     "Jack and Jill",
     "Glee",
-    "The Vampire Diaries",
+    "The Vampire Diarie",
     "King Arthur",
     "Windows XP",
     "Harry Potter",
